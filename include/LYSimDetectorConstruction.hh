@@ -60,6 +60,12 @@ class LYSimDetectorConstruction : public G4VUserDetectorConstruction
 	void		SetTileAbsLength	(G4double iAbsLength)	{tileAbsLength = iAbsLength;}
 	G4double	GetTileAbsLength()	{return tileAbsLength;}
 
+	void		SetInducedMuTile(G4double value)	{inducedMuTile = value;}
+	G4double	GetInducedMuTile()	{return inducedMuTile;}
+
+	void		SetInducedMuFiber(G4double value)	{inducedMuFiber = value;}
+	G4double	GetInducedMuFiber()	{return inducedMuFiber;}
+
 	void		SetAngle1	(G4double iAngle1)	{angle1 = iAngle1;}
 	G4double	GetAngle1() {return angle1;}
 	
@@ -194,6 +200,8 @@ class LYSimDetectorConstruction : public G4VUserDetectorConstruction
 	G4double FibPMT_gap;			////
 	G4double air_gap;				//thickness of air gap between fiber and tile
 	G4double tileAbsLength;
+	G4double inducedMuTile;			//Radiation-induced absorption coefficient (cm^-1) in tile
+	G4double inducedMuFiber;		//Radiation-induced absorption coefficient (cm^-1) in fiber	
 	
 	//Tile geometry parameters
 	G4double angle1;

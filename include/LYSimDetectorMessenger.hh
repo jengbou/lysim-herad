@@ -45,10 +45,12 @@ class LYSimDetectorMessenger : public G4UImessenger
 		G4UIcmdWithADoubleAndUnit*	SetDx2Cmd;
 		G4UIcmdWithADoubleAndUnit*	SetDyCmd;
 		G4UIcmdWithADoubleAndUnit*	SetDzCmd;
-		G4UIcmdWithAnInteger* 			SetIetaCmd;
-		G4UIcmdWithAnInteger* 			SetLayerNoCmd;
-		G4UIcmdWithAnInteger* 			SetTileTypeCmd;
+		G4UIcmdWithAnInteger*		SetIetaCmd;
+		G4UIcmdWithAnInteger*		SetLayerNoCmd;
+		G4UIcmdWithAnInteger*		SetTileTypeCmd;
 		G4UIcmdWithADoubleAndUnit*	SetTileAbsLengthCmd;
+		G4UIcmdWithADouble*        	SetInducedMuTileCmd;
+		G4UIcmdWithADouble*        	SetInducedMuFiberCmd;
 
 };
 

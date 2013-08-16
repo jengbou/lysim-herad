@@ -113,17 +113,17 @@ LYSimDetectorMessenger::LYSimDetectorMessenger(LYSimDetectorConstruction * Det)
   SetIetaCmd = new G4UIcmdWithAnInteger("/LYSim/SetIeta", this);
   SetIetaCmd->SetGuidance("Set the ieta for the tile");
   SetIetaCmd->SetParameterName("ieta",false);
-	SetIetaCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  SetIetaCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
 
   SetLayerNoCmd = new G4UIcmdWithAnInteger("/LYSim/SetLayerNo", this);
   SetLayerNoCmd->SetGuidance("Set the layer number for the tile");
   SetLayerNoCmd->SetParameterName("layerNo",false);
-	SetLayerNoCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  SetLayerNoCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
 	
-	SetLayerNoCmd = new G4UIcmdWithAnInteger("/LYSim/SetTileType", this);
+  SetLayerNoCmd = new G4UIcmdWithAnInteger("/LYSim/SetTileType", this);
   SetLayerNoCmd->SetGuidance("Set the tile type. Conflicts with SetAngle1 and SetAngle2.");
   SetLayerNoCmd->SetParameterName("type",false);
-	SetLayerNoCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+  SetLayerNoCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
 	  
   SetTileAbsLengthCmd = new G4UIcmdWithADoubleAndUnit("/LYSim/SetTileAbsLength", this);
   SetTileAbsLengthCmd->SetGuidance("Set the light attenuation length in the tile");
@@ -133,6 +133,17 @@ LYSimDetectorMessenger::LYSimDetectorMessenger(LYSimDetectorConstruction * Det)
   SetTileAbsLengthCmd->SetRange("TileAbsLength>=0.");
   SetTileAbsLengthCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
 
+  SetInducedMuTileCmd = new G4UIcmdWithADouble("/LYSim/SetInducedMuTile", this);
+  SetInducedMuTileCmd->SetGuidance("Set the induced absorption coefficient (cm^-1)");
+  SetInducedMuTileCmd->SetParameterName("InducedMuTile",false);
+  SetInducedMuTileCmd->SetRange("InducedMuTile>=0.");
+  SetInducedMuTileCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
+
+  SetInducedMuFiberCmd = new G4UIcmdWithADouble("/LYSim/SetInducedMuFiber", this);
+  SetInducedMuFiberCmd->SetGuidance("Set the induced absorption coefficient (cm^-1)");
+  SetInducedMuFiberCmd->SetParameterName("InducedMuFiber",false);
+  SetInducedMuFiberCmd->SetRange("InducedMuFiber>=0.");
+  SetInducedMuFiberCmd->AvailableForStates(G4State_PreInit,G4State_Idle);
 }
 
 LYSimDetectorMessenger::~LYSimDetectorMessenger()
@@ -229,5 +240,13 @@ void LYSimDetectorMessenger::SetNewValue(G4UIcommand* command,G4String val)
 	else if( command == SetTileAbsLengthCmd ) {
 		Detector->
 		SetTileAbsLength(G4UIcmdWithADoubleAndUnit::GetNewDoubleValue(val));
+	}
+	else if( command == SetInducedMuTileCmd ) {
+		Detector->
+		SetInducedMuTile(G4UIcmdWithADouble::GetNewDoubleValue(val));
+	}
+	else if( command == SetInducedMuFiberCmd ) {
+		Detector->
+		SetInducedMuFiber(G4UIcmdWithADouble::GetNewDoubleValue(val));
 	}
 }

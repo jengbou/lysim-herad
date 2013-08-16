@@ -133,8 +133,9 @@ void LYSimDetectorConstruction::SetDefaults()
 	ieta = 29;
 	layerNo = 1;
 
-	
 	tileAbsLength = 20.0 *cm;
+	inducedMuTile = 1e-20;
+	inducedMuFiber = 1e-20;
 	
 	readoutCorner = 1;
 
