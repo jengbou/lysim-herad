@@ -5,6 +5,7 @@
 #include "G4UImessenger.hh"
 
 #include "LYSimDetectorConstruction.hh"
+#include "Analysis.hh"
 
 class G4UIdirectory;
 class G4UIcmdWithABool;
@@ -27,6 +28,7 @@ class LYSimDetectorMessenger : public G4UImessenger
   private:
 
 		LYSimDetectorConstruction*   Detector;
+		Analysis* Analysis;
 
 		G4UIdirectory*          detDir;
 

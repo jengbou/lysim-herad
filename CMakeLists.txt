@@ -60,7 +60,7 @@ target_link_libraries(LYSim ${Geant4_LIBRARIES} ${ROOT_LIBRARIES} )
 set(LYSim_SCRIPTS
     init_vis.mac vis.mac init.mac shieldingrun.mac run.mac photontest.mac
     TyvekGrease.in TyvekNoGrease.in NoTyvekGrease.in NoTyvekNoGrease.in
-    HERadDam.in
+	HERadDam.in LYSim.jdl LYSim.sh
   )
 
 foreach(_script ${LYSim_SCRIPTS})

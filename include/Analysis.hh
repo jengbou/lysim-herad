@@ -54,7 +54,11 @@ public:
 	void AddHitCount( G4int num ) { HitCount += num; }
 	
 	// Set tile absorption length to record
-	void SetTileAbsLength ( G4double length) { tileAbsLength = length;}
+	void SetTileAbsLength ( G4double length) { tileAbsLength = length; }
+
+	// Set the induced Mu in Tile/Fiber to record
+	void SetInducedMuTile ( G4double value ) { inducedMuTile = value; }
+	void SetInducedMuFiber ( G4double value ) { inducedMuFiber = value; }
 	
 private:
 	//! Private construtor: part of singleton pattern
@@ -82,6 +86,10 @@ private:
 	//TH1D* PhotonHitsHist;
 	
 	G4double tileAbsLength;
+
+	G4double inducedMuTile;
+	G4double inducedMuFiber;
+	
 };
 
 #endif /* ANALYSIS_HH_ */

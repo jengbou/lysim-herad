@@ -846,8 +846,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 	fPyrex = nist->FindOrBuildMaterial("G4_Pyrex_Glass");
 	fWater = nist->FindOrBuildMaterial("G4_WATER");
 
+	//Air definition
 	{
-		//Air definition
 		/*
 		const G4int nEntries = 50;
 
@@ -884,8 +884,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fAir->SetMaterialPropertiesTable(MPTAir);
 	}
 
+	//Silicon Dioxide (SiO2)
 	{
-		//Silicon Dioxide (SiO2)
 		const G4int nEntries = 50;
 		//Photon energy corresponds to ~620nm, ~611nm, ... ~357nm wavelengths
 		G4double PhotonEnergy[nEntries] =
@@ -936,8 +936,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fSiO2->SetMaterialPropertiesTable(MPTFiber);
 	}
 
+	//Polystyrene
 	{
-		//Polystyrene
 		const G4int nEntries = 50;
 		//Photon energy corresponds to ~620nm, ~611nm, ... ~357nm wavelengths
 		G4double PhotonEnergy[nEntries] =
@@ -989,8 +989,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fPolystyrene->GetIonisation()->SetBirksConstant(0.126*mm/MeV);
 	}
 
+	//Pyrex glass
 	{
-		//Pyrex glass
 		const G4int nEntries = 2;
 		G4double PhotonEnergy[nEntries] = 
 		{1.0*eV, 6.0*eV};
@@ -1006,8 +1006,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fPyrex->SetMaterialPropertiesTable(MPTPyrex);
 	}
 
+	//Water (Coupling between Scintillator and PMT window)
 	{
-		//Water (Coupling between Scintillator and PMT window)
 		const G4int nEntries = 2;
 		G4double PhotonEnergy[nEntries] = 
 		{1.0*eV, 6.0*eV};
@@ -1062,8 +1062,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 	
 	
 
+	//LYSO
 	{
-		//LYSO
 		//------------------------------
 		// common LYSO
 		G4Material* LYSOtemplate = new G4Material("LYSOtemplate", 7.1*g/cm3, 5, kStateSolid);
@@ -1178,23 +1178,28 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fLYSO->SetMaterialPropertiesTable(lysoprop);
 	}
 
-
+	//fiberCore
 	{
-		if(!fFiberCore)
-		{
-			fFiberCore = new G4Material("FiberCorePS", 1.05*g/cm3, 2, kStateSolid);
-			fFiberCore->AddElement(C, 85.71*perCent);
-			fFiberCore->AddElement(H, 14.28*perCent);
-		}
+		fFiberCore = new G4Material("FiberCorePS", 1.05*g/cm3, 2, kStateSolid);
+		fFiberCore->AddElement(C, 85.71*perCent);
+		fFiberCore->AddElement(H, 14.28*perCent);
+
 		//fFiberCore = nist->FindOrBuildMaterial("G4_POLYSTYRENE");
 
 
 		//Fiber material definition
+
+		G4double baseAbsLength = 10*m;
+		G4double baseMu = 1 / baseAbsLength;
+		G4double inducedMu = GetInducedMuFiber(); 
+		G4double mu = baseMu + inducedMu;
+		G4double absLength = 1 / mu;
+
 		const G4int NUMENTRIES = 2;
 		G4double PhotonEnergyFiberCore[NUMENTRIES] = {1.0*eV, 6.0*eV};
 		G4double RefractiveIndexFiberCore[NUMENTRIES] = {1.59, 1.59};
 		G4double AbsLengthFiberCore[NUMENTRIES] =   
-		{10*m, 10*m};
+		{absLength, absLength};
 
 		const G4int NUMENTRIES1 = 91;
 		G4double PhotonEnergy_WLS_ABS_FiberCore[NUMENTRIES1] = 
@@ -1267,7 +1272,7 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fFiberCore->SetMaterialPropertiesTable(MPTFiberCore);
 	}
 		
-
+	//fFiberInnerCladding
 	{	
 		if (!fFiberInnerCladding)
 		{
@@ -1284,6 +1289,7 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fFiberInnerCladding->SetMaterialPropertiesTable(MPTFiberInnerCladding);
 	}
 	
+	//fFiberOuterCladding
 	{	
 		if (!fFiberOuterCladding)
 		{
@@ -1300,13 +1306,19 @@ void LYSimDetectorConstruction::DefineMaterials()
 		fFiberOuterCladding->SetMaterialPropertiesTable(MPTFiberOuterCladding);
 	}
 	
+	//SCSN81
 	{
-		//SCSN81
 		fSCSN81 = nist->FindOrBuildMaterial("G4_POLYSTYRENE");
 		const G4int nEntries = 2;
 		G4double PhotonEnergy[nEntries] = {1.0*eV, 6.0*eV};
 		G4double RefractiveIndex[nEntries] = {1.59, 1.59};
-		G4double absLength = GetTileAbsLength();
+
+		G4double baseAbsLength = GetTileAbsLength();
+		G4double baseMu = 1 / baseAbsLength;
+		G4double inducedMu = GetInducedMuTile(); 
+		G4double mu = baseMu + inducedMu;
+		G4double absLength = 1 / mu;
+
 		G4cout << "Tile abs length set to " << G4BestUnit(absLength, "Length") << G4endl;
 		G4double AbsLength[nEntries] = {absLength, absLength};
 		// Add entries into properties table
