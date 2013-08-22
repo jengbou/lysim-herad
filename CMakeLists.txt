@@ -72,6 +72,11 @@ foreach(_script ${LYSim_SCRIPTS})
 endforeach()
 
 #----------------------------------------------------------------------------
+# Copy ROOT macros used for Analysis.
+#
+file(COPY macros DESTINATION ${PROJECT_BINARY_DIR})
+
+#----------------------------------------------------------------------------
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 #
 install(TARGETS LYSim DESTINATION bin)
