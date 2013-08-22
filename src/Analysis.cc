@@ -94,14 +94,14 @@ void Analysis::EndOfRun(const G4Run* aRun)
 	G4cout	<< "Efficiency in this run is " << (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	if (outputfile.is_open())
 	{
-		outputfile << "#Attenuation Length (cm) \t Efficiency" << G4endl;
-		outputfile << tileAbsLength << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
+		outputfile << "#Mu [cm^-1] \t Efficiency" << G4endl;
+		outputfile << inducedMuTile << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	}
 	else
 	{
 		G4cout << "Output file not open" << G4endl;
-		G4cout << "Beam spot position (mm) \t Efficiency" << G4endl;
-		G4cout << tileAbsLength << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
+		G4cout << "#Mu [cm^-1] \t Efficiency" << G4endl;
+		G4cout << inducedMuTile << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	}
 	outputfile.close();
 }

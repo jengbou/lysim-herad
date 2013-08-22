@@ -11,6 +11,8 @@
 LYSimDetectorMessenger::LYSimDetectorMessenger(LYSimDetectorConstruction * Det)
  : Detector(Det)
 {
+	analysis = Analysis::GetInstance();
+
   detDir = new G4UIdirectory("/LYSim/");
   detDir->SetGuidance(" Geometry Setup ");
 
@@ -168,6 +170,8 @@ LYSimDetectorMessenger::~LYSimDetectorMessenger()
 	delete SetLayerNoCmd;
 	delete SetTileTypeCmd;
 	delete SetTileAbsLengthCmd;
+	delete SetInducedMuTileCmd;
+	delete SetInducedMuFiberCmd;
 }
 
 void LYSimDetectorMessenger::SetNewValue(G4UIcommand* command,G4String val)
@@ -242,11 +246,17 @@ void LYSimDetectorMessenger::SetNewValue(G4UIcommand* command,G4String val)
 		SetTileAbsLength(G4UIcmdWithADoubleAndUnit::GetNewDoubleValue(val));
 	}
 	else if( command == SetInducedMuTileCmd ) {
+		G4double value = G4UIcmdWithADouble::GetNewDoubleValue(val);
 		Detector->
-		SetInducedMuTile(G4UIcmdWithADouble::GetNewDoubleValue(val));
+		SetInducedMuTile(value);
+		analysis->
+		SetInducedMuTile(value);
 	}
 	else if( command == SetInducedMuFiberCmd ) {
+		G4double value = G4UIcmdWithADouble::GetNewDoubleValue(val);
 		Detector->
-		SetInducedMuFiber(G4UIcmdWithADouble::GetNewDoubleValue(val));
+		SetInducedMuFiber(value);
+		analysis->
+		SetInducedMuFiber(value);
 	}
 }

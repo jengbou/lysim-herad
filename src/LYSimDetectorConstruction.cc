@@ -133,7 +133,7 @@ void LYSimDetectorConstruction::SetDefaults()
 	ieta = 29;
 	layerNo = 1;
 
-	tileAbsLength = 20.0 *cm;
+	tileAbsLength = 50*cm;
 	inducedMuTile = 1e-20;
 	inducedMuFiber = 1e-20;
 	
@@ -1180,17 +1180,19 @@ void LYSimDetectorConstruction::DefineMaterials()
 
 	//fiberCore
 	{
-		fFiberCore = new G4Material("FiberCorePS", 1.05*g/cm3, 2, kStateSolid);
-		fFiberCore->AddElement(C, 85.71*perCent);
-		fFiberCore->AddElement(H, 14.28*perCent);
+		if (!fFiberCore) {
+			fFiberCore = new G4Material("FiberCorePS", 1.05*g/cm3, 2, kStateSolid);
+			fFiberCore->AddElement(C, 85.71*perCent);
+			fFiberCore->AddElement(H, 14.28*perCent);
+		}
 
 		//fFiberCore = nist->FindOrBuildMaterial("G4_POLYSTYRENE");
 
 
 		//Fiber material definition
 
-		G4double baseAbsLength = 10*m;
-		G4double baseMu = 1 / baseAbsLength;
+		G4double baseAbsLength = 2.5*m;
+		G4double baseMu = 0; //1 / baseAbsLength;
 		G4double inducedMu = GetInducedMuFiber(); 
 		G4double mu = baseMu + inducedMu;
 		G4double absLength = 1 / mu;
@@ -1314,7 +1316,7 @@ void LYSimDetectorConstruction::DefineMaterials()
 		G4double RefractiveIndex[nEntries] = {1.59, 1.59};
 
 		G4double baseAbsLength = GetTileAbsLength();
-		G4double baseMu = 1 / baseAbsLength;
+		G4double baseMu = 0.01 / cm; // 1 / baseAbsLength;
 		G4double inducedMu = GetInducedMuTile(); 
 		G4double mu = baseMu + inducedMu;
 		G4double absLength = 1 / mu;

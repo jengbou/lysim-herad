@@ -28,7 +28,7 @@ class LYSimDetectorMessenger : public G4UImessenger
   private:
 
 		LYSimDetectorConstruction*   Detector;
-		Analysis* Analysis;
+		Analysis* analysis;
 
 		G4UIdirectory*          detDir;
 
