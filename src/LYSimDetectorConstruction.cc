@@ -1193,10 +1193,11 @@ void LYSimDetectorConstruction::DefineMaterials()
 
 		G4double baseAbsLength = 2.5*m;
 		G4double baseMu = 0; //1 / baseAbsLength;
-		G4double inducedMu = GetInducedMuFiber(); 
+		G4double inducedMu = GetInducedMuFiber() /cm; 
 		G4double mu = baseMu + inducedMu;
 		G4double absLength = 1 / mu;
 
+		G4cout << "Fiber abs length set to " << G4BestUnit(absLength, "Length") << G4endl;
 		const G4int NUMENTRIES = 2;
 		G4double PhotonEnergyFiberCore[NUMENTRIES] = {1.0*eV, 6.0*eV};
 		G4double RefractiveIndexFiberCore[NUMENTRIES] = {1.59, 1.59};
@@ -1316,8 +1317,8 @@ void LYSimDetectorConstruction::DefineMaterials()
 		G4double RefractiveIndex[nEntries] = {1.59, 1.59};
 
 		G4double baseAbsLength = GetTileAbsLength();
-		G4double baseMu = 0.01 / cm; // 1 / baseAbsLength;
-		G4double inducedMu = GetInducedMuTile(); 
+		G4double baseMu = 0; // 0.01 / cm; // 1 / baseAbsLength;
+		G4double inducedMu = GetInducedMuTile() / cm; 
 		G4double mu = baseMu + inducedMu;
 		G4double absLength = 1 / mu;
 
