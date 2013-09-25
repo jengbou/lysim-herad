@@ -13,10 +13,14 @@
 #include <TLegend.h>
 #include <TAxis.h>
 #include <TImageDump.h>
+#include <TFile.h>
+#include <TTree.h>
 
 using TMath::Exp;
 using TMath::Power;
 using TMath::Log;
+
+void readRatios(string inputFile);
 
 // Process one line of the GEANT output. 
 void processLine(string line, double& absorption, double& efficiency)
@@ -163,6 +167,7 @@ Double_t MuVsEfficiency(const Double_t *x, Double_t *par)
 }
 
 // Test EfficiencyVsMu and inverse
+/*
 void test()
 {
 	double par[3] = {-1.5, -46, 254};
@@ -173,6 +178,7 @@ void test()
 	cout << y[0] << endl;
 	cout << z[0] << endl;
 }
+*/
 
 // Function to model efficiency vs 1 / attenuation length.
 Double_t LogEfficiencyVsMu(const Double_t *x, Double_t *par)
@@ -226,6 +232,7 @@ void myfunc()
 
 void processLaserDataLine(string line, double& lumi, double* ratios)
 {
+	// ratio[0] through ratio[12] corresponds to ieta 17 to 29.
 	// Make sure "ratios" has 13 elements.
 	stringstream ss(line);
 	string field;
@@ -280,13 +287,39 @@ void readLaserDataFile(string inputFile, vector<double>& lumis, std::map< int, v
 	else {cout <<"Error: Input file not found." <<endl;}
 }
 
+void readLaserDataFile2(string inputFile, vector<double>& lumis, std::map< int, vector<double> > & ratiosMap)
+{
+	ifstream inputStream(inputFile.c_str());
+	string line;
+	if(inputStream.is_open())
+	{
+		while(getline(inputStream, line))
+		{
+			if(line[0]=='#') continue; //Skip comment lines
+			else 
+			{
+				//Process the line to get ieta and dose
+				double lumi;
+				double ratios[13];
+				processLaserDataLine(line, lumi, ratios);
+				lumis.push_back(lumi);
+				for (int i=0; i < 13; i++) {
+					ratiosMap[i+17].push_back(ratios[i]);
+					//cout << "ratios[i] " <<ratios[i] << endl;
+					//cout << "ratiosMap[i+17] " << (ratiosMap[i+17])[1] << endl;
+				}
+			}
+		}
+	}
+	else {cout <<"Error: Input file not found." <<endl;}
+}
+
 void ratiosMap(int ieta = 29) //bool doPlot = false)
 {
 	vector<double> lumis;
 	std::map<int, vector<double> > ratiosMap;
 
-	readLaserDataFile("HELaserData.txt", lumis, ratiosMap);
-
+	readLaserDataFile("../HELaserData.txt", lumis, ratiosMap);
 
 	TCanvas* c1 = new TCanvas("c1","canvas1",800,600);
 	TGraph* graph;
@@ -311,218 +344,8 @@ Double_t LambdaVsDose2(const Double_t *x, Double_t *par)
 	return f;
 }
 
-void MakePlots() 
-{
-	// Vector of colors.
-	vector<Color_t> colors(18, kBlack);
-	{
-		colors[0] = kBlue;
-		colors[1] = kOrange;
-		colors[2] = kGreen;
-		colors[3] = kRed;
-		colors[4] = kCyan;
-		colors[5] = kMagenta;
-		// Define colors[6] through colors[11]
-		for (int i = 0; i < 6; i++ ) {
-			colors[i+6] = colors[i] + 1;
-		}
-		// Define colors[12] through colors[17]
-		for (int i = 0; i < 6; i++ ) {
-			colors[i+12] = colors[i] + 2;
-		}
-	}
-	
-	TCanvas* c1;
-	c1 = new TCanvas("c1", "Efficiency vs Mu", 800, 600);
-	//gPad->SetLogx();
-	//gPad->SetLogy();
-	
-	// graphsAll contains Efficiency vs Mu data for all tiles from the Geant4 simulations.
-	// namesAll contains names for all graphs in graphsAll.
-	// graphsTypeX contains Efficiency vs Lambda data for tiles of type X from the Geant4 simulations.
-	vector<TGraphErrors*> graphsLayer1, graphsLayer7, graphsAll, graphsAllLog;
-	vector<string> namesAll;
-
-	// Read from Analysis files and add to graphsTypeX, and graphsAll.
-	// (Only reading type 1 tiles.)
-	{
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta22.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta23.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta24.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta25.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta26.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta27.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta28.txt"));
-		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta29.txt"));
-		
-	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
-	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
-	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
-	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
-	//	
-	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
-	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
-	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
-	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
-		
-		// Add all graphs from graphsLayer1 to graphsAll. Add all legend names to namesAll.
-		for (unsigned int i=0; i < graphsLayer1.size(); i++) {
-			graphsAll.push_back(graphsLayer1[i]);
-			stringstream name;
-			name << "ieta " << (i+22) << "Layer1";
-			namesAll.push_back(name.str());
-		}
-	}
-
-	TLegend* leg = new TLegend(0.7, 0.6, 0.9, 0.85);
-	// Run through all graphs in graphsAll and modify error bars if necessary.
-	// Push log version of graphsAll into graphsAllLog.
-	// Set graph properties of all graphs in graphsAll and draw to c1 pad 1.
-	// Add all legend names from namesAll to leg.
-	for (unsigned int i=0; i < graphsAll.size(); i++) {
-		//cout << graphsAll.size() << ": " << graphsAll[i] << endl;
-		
-		int n = graphsAll[i]->GetN();
-		double* xV = graphsAll[i]->GetX();
-		// Offset x-values for clarity.
-		// (Disabled)
-		for (int j=0; j < n; j++) {
-			//xV[j] += i*0.0002;
-		}
-		double* yV = graphsAll[i]->GetY();
-		double* exV = graphsAll[i]->GetEX();
-		double* eyV = graphsAll[i]->GetEY();
-	
-		graphsAll[i] = new TGraphErrors(n, xV, yV, exV, eyV);
-		graphsAll[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
-		graphsAll[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
-		graphsAll[i]->GetYaxis()->SetTitle("Efficiency");
-		//graphsAll[i]->GetXaxis()->SetLimits(0.0, 0.05);
-		graphsAll[i]->GetYaxis()->SetRangeUser(1e-2, 2e-1);
-		graphsAll[i]->SetMarkerColor(colors[i]);
-		graphsAll[i]->SetMarkerSize(0.5);
-		graphsAll[i]->SetMarkerStyle(21);
-
-		graphsAllLog.push_back( (TGraphErrors*) graphsAll[i]->Clone() );
-
-		c1->cd(1);
-		c1->SetLogy();
-		if(i==0) {
-			graphsAll[i]->Draw("AP");
-		}
-		else {
-			graphsAll[i]->Draw("P same");
-		}
-	
-		leg->AddEntry(graphsAll[i], namesAll[i].c_str(), "p");
-	}
-
-	vector<TF1*> functionV (graphsAll.size());
-	for (unsigned int i=0; i < graphsAll.size(); i++) {
-		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 3);
-	}
-	// Fit all graphs in graphsAllLog to myfunction.
-	for (unsigned int i=0; i < graphsAll.size(); i++) {
-		Double_t par[] = {1.0, 1.0, 1.0, 1.0};
-		functionV[i]->SetParameters(par);
-		functionV[i]->SetLineColor(colors[i]);
-		functionV[i]->SetParNames("p0", "p1", "p2");
-		graphsAll[i]->Fit(functionV[i], "", "", 0.01, 0.045);
-	}
-
-	// Make log version of graphsAllLog
-	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
-		//cout << graphsAllLogLog.size() << ": " << graphsAllLog[i] << endl;
-		
-		int n = graphsAllLog[i]->GetN();
-		double* xV = graphsAllLog[i]->GetX();
-		double* yV = graphsAllLog[i]->GetY();
-		for (int j=0; j < n; j++) {
-			yV[j] = log10( yV[j] );
-		}
-		double* exV = graphsAllLog[i]->GetEX();
-		double* eyV = graphsAllLog[i]->GetEY();
-
-		graphsAllLog[i] = new TGraphErrors(n, xV, yV, exV, eyV);
-		graphsAllLog[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
-		graphsAllLog[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
-		graphsAllLog[i]->GetYaxis()->SetTitle("Log(Efficiency)");
-		//graphsAllLog[i]->GetXaxis()->SetLimits(-0.005, 0.045);
-		//graphsAllLog[i]->GetYaxis()->SetRangeUser(1e-6, 1e0);
-		graphsAllLog[i]->SetMarkerColor(colors[i]);
-		graphsAllLog[i]->SetMarkerSize(0.5);
-		graphsAllLog[i]->SetMarkerStyle(21);
-
-		//c1->cd(1);
-		//if(i==0) {
-		//	graphsAllLog[i]->Draw("AP");
-		//}
-		//else {
-		//	graphsAllLog[i]->Draw("P same");
-		//}
-	}
-
-	// Draw leg to c1 pad 1.
-	{
-		c1->cd(1);
-		leg->SetFillColor(0);
-		leg->SetBorderSize(0);
-		leg->SetTextSize(0.03);
-		leg->SetTextFont(42);
-		leg->Draw();
-	}
-
-	vector<TF1*> functionLogV (graphsAllLog.size(), new TF1("LogEfficiencyVsMu", LogEfficiencyVsMu, 0.0, 0.0, 3));
-	// Fit all graphs in graphsAllLog to myfunction.
-	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
-		Double_t par[] = {1.0, 1.0, 1.0, 1.0};
-		functionLogV[i]->SetParameters(par);
-		functionLogV[i]->SetLineColor(colors[i]);
-		functionLogV[i]->SetParNames("p0", "p1", "p2");
-		graphsAllLog[i]->Fit(functionLogV[i], "", "", 0.01, 0.045);
-	}
-
-	// Read laser data file.
-	// ratiosMap[ieta] contains ratios for ieta at luminosity values contained in lumis.
-	vector<double> lumis;
-	std::map<int, vector<double> > ratiosMap;
-	readLaserDataFile("../HELaserData.txt", lumis, ratiosMap);
-
-	// Read dose and fluence map data files.
-	std::map<int, double> doseMapLayer1;
-	std::map<int, double> fluenceMapLayer1;
-	readDoseFile("../doseLayer1.txt", doseMapLayer1, fluenceMapLayer1);
-
-	for (unsigned int i=0; i < graphsAll.size(); i++) {
-		// Define parameters for DoseToMu and calculate undamaged efficiency.
-		double par[2] = {0.02, 0.002};
-		double muTileUndamaged = 0.022;
-
-		for (unsigned int j=0; j < lumis.size(); j++) {
-			double dose = (doseMapLayer1[i+22] / 100) * lumis[j];
-			double muTile = DoseToMu(&dose, par);
-			double efficiency = functionV[i]->Eval(muTile);
-			double efficiencyUndamaged = functionV[i]->Eval(muTileUndamaged);
-			double ratio = efficiency / efficiencyUndamaged;
-			double ratioFromData = (ratiosMap[i+22])[j];
-
-			if(j == lumis.size()-1) {
-				cout << "ieta: " << i+22 << endl;
-				cout << "dose: " << dose << endl; 
-				cout << "muTile: " << muTile << endl; 
-				cout << "efficiency: " << efficiency << endl; 
-				cout << "efficiencyUndamaged: " << efficiencyUndamaged << endl; 
-				cout << "ratio: " << ratio << endl; 
-				cout << "ratioFromData: " << ratioFromData << endl; 
-				cout << endl;
-			}
-		}
-	}
-
-}
-
-
 // Deprecated code
+/*
 void temp(int minLumiIndex, int maxLumiIndex, double refAttLength, double lumioffset, bool doPlot = false, bool doSavePlots = false, bool doDoseOrFluence = true) 
 {
 	// Vector of colors.
@@ -999,5 +822,319 @@ void temp(int minLumiIndex, int maxLumiIndex, double refAttLength, double lumiof
 //		canvasFluence->SaveAs("k-parameter (Fluence).png");
 //	}
 }
+*/
 
+void MakeTrees() 
+{
+	// Vector of colors.
+	vector<Color_t> colors(18, kBlack);
+	{
+		colors[0] = kBlue;
+		colors[1] = kOrange;
+		colors[2] = kGreen;
+		colors[3] = kRed;
+		colors[4] = kCyan;
+		colors[5] = kMagenta;
+		// Define colors[6] through colors[11]
+		for (int i = 0; i < 6; i++ ) {
+			colors[i+6] = colors[i] + 1;
+		}
+		// Define colors[12] through colors[17]
+		for (int i = 0; i < 6; i++ ) {
+			colors[i+12] = colors[i] + 2;
+		}
+	}
+	
+	TCanvas* c1;
+	c1 = new TCanvas("c1", "Efficiency vs Mu", 800, 600);
+	//gPad->SetLogx();
+	//gPad->SetLogy();
+	
+	// graphsAll contains Efficiency vs Mu data for all tiles from the Geant4 simulations.
+	// namesAll contains names for all graphs in graphsAll.
+	// graphsTypeX contains Efficiency vs Lambda data for tiles of type X from the Geant4 simulations.
+	vector<TGraphErrors*> graphsLayer1, graphsLayer7, graphsAll, graphsAllLog;
+	vector<string> namesAll;
 
+	// Read from Analysis files and add to graphsTypeX, and graphsAll.
+	// (Only reading type 1 tiles.)
+	{
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta22.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta23.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta24.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta25.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta26.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta27.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta28.txt"));
+		graphsLayer1.push_back(readAnalysisFile("../run5b/Analysis-run5b_layer1_ieta29.txt"));
+		
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
+	//	
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
+		
+		// Add all graphs from graphsLayer1 to graphsAll. Add all legend names to namesAll.
+		for (unsigned int i=0; i < graphsLayer1.size(); i++) {
+			graphsAll.push_back(graphsLayer1[i]);
+			stringstream name;
+			name << "ieta " << (i+22) << "Layer1";
+			namesAll.push_back(name.str());
+		}
+	}
+
+	TLegend* leg = new TLegend(0.7, 0.6, 0.9, 0.85);
+	// Run through all graphs in graphsAll and modify error bars if necessary.
+	// Push log version of graphsAll into graphsAllLog.
+	// Set graph properties of all graphs in graphsAll and draw to c1 pad 1.
+	// Add all legend names from namesAll to leg.
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		//cout << graphsAll.size() << ": " << graphsAll[i] << endl;
+		
+		int n = graphsAll[i]->GetN();
+		double* xV = graphsAll[i]->GetX();
+		// Offset x-values for clarity.
+		// (Disabled)
+		for (int j=0; j < n; j++) {
+			//xV[j] += i*0.0002;
+		}
+		double* yV = graphsAll[i]->GetY();
+		double* exV = graphsAll[i]->GetEX();
+		double* eyV = graphsAll[i]->GetEY();
+	
+		graphsAll[i] = new TGraphErrors(n, xV, yV, exV, eyV);
+		graphsAll[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
+		graphsAll[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
+		graphsAll[i]->GetYaxis()->SetTitle("Efficiency");
+		//graphsAll[i]->GetXaxis()->SetLimits(0.0, 0.05);
+		graphsAll[i]->GetYaxis()->SetRangeUser(1e-2, 2e-1);
+		graphsAll[i]->SetMarkerColor(colors[i]);
+		graphsAll[i]->SetMarkerSize(0.5);
+		graphsAll[i]->SetMarkerStyle(21);
+
+		graphsAllLog.push_back( (TGraphErrors*) graphsAll[i]->Clone() );
+
+		c1->cd(1);
+		c1->SetLogy();
+		if(i==0) {
+			//graphsAll[i]->Draw("AP");
+		}
+		else {
+			graphsAll[i]->Draw("P same");
+		}
+	
+		leg->AddEntry(graphsAll[i], namesAll[i].c_str(), "p");
+	}
+
+	vector<TF1*> functionV (graphsAll.size());
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 3);
+	}
+	// Fit all graphs in graphsAllLog to myfunction.
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		Double_t par[] = {1.0, 1.0, 1.0, 1.0};
+		functionV[i]->SetParameters(par);
+		functionV[i]->SetLineColor(colors[i]);
+		functionV[i]->SetParNames("p0", "p1", "p2");
+		graphsAll[i]->Fit(functionV[i], "", "", 0.01, 0.045);
+	}
+
+	// Make log version of graphsAllLog
+	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
+		//cout << graphsAllLogLog.size() << ": " << graphsAllLog[i] << endl;
+		
+		int n = graphsAllLog[i]->GetN();
+		double* xV = graphsAllLog[i]->GetX();
+		double* yV = graphsAllLog[i]->GetY();
+		for (int j=0; j < n; j++) {
+			yV[j] = log10( yV[j] );
+		}
+		double* exV = graphsAllLog[i]->GetEX();
+		double* eyV = graphsAllLog[i]->GetEY();
+
+		graphsAllLog[i] = new TGraphErrors(n, xV, yV, exV, eyV);
+		graphsAllLog[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
+		graphsAllLog[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
+		graphsAllLog[i]->GetYaxis()->SetTitle("Log(Efficiency)");
+		//graphsAllLog[i]->GetXaxis()->SetLimits(-0.005, 0.045);
+		//graphsAllLog[i]->GetYaxis()->SetRangeUser(1e-6, 1e0);
+		graphsAllLog[i]->SetMarkerColor(colors[i]);
+		graphsAllLog[i]->SetMarkerSize(0.5);
+		graphsAllLog[i]->SetMarkerStyle(21);
+
+		//c1->cd(1);
+		//if(i==0) {
+		//	graphsAllLog[i]->Draw("AP");
+		//}
+		//else {
+		//	graphsAllLog[i]->Draw("P same");
+		//}
+	}
+
+	// Draw leg to c1 pad 1.
+	{
+		c1->cd(1);
+		leg->SetFillColor(0);
+		leg->SetBorderSize(0);
+		leg->SetTextSize(0.03);
+		leg->SetTextFont(42);
+		//leg->Draw();
+	}
+
+	vector<TF1*> functionLogV (graphsAllLog.size(), new TF1("LogEfficiencyVsMu", LogEfficiencyVsMu, 0.0, 0.0, 3));
+	// Fit all graphs in graphsAllLog to myfunction.
+	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
+		Double_t par[] = {1.0, 1.0, 1.0, 1.0};
+		functionLogV[i]->SetParameters(par);
+		functionLogV[i]->SetLineColor(colors[i]);
+		functionLogV[i]->SetParNames("p0", "p1", "p2");
+		graphsAllLog[i]->Fit(functionLogV[i], "", "", 0.01, 0.045);
+	}
+
+	// Read laser data file.
+	// ratiosMap[ieta] contains ratios for ieta at luminosity values contained in lumis.
+	vector<double> lumis;
+	std::map<int, vector<double> > ratiosMapData;
+	readLaserDataFile("../HELaserData.txt", lumis, ratiosMapData);
+
+	// Read dose and fluence map data files.
+	std::map<int, double> doseMapLayer1;
+	std::map<int, double> fluenceMapLayer1;
+	readDoseFile("../doseLayer1.txt", doseMapLayer1, fluenceMapLayer1);
+
+	// Variables to read and write from Trees.
+	Int_t ieta, lumiIndex;
+	Double_t lumi, ratio;
+	ieta = 0;
+	lumiIndex = 0;
+	lumi = 0.;
+	ratio = 0.;
+
+	// Prepare to read dataRatios Tree.
+	TFile* dataFile = new TFile("dataRatios.root");
+	TTree* dataRatios = (TTree*)dataFile->Get("dataRatios");
+	dataRatios->Show(10);
+	dataRatios->SetBranchAddress("ieta", &ieta);
+	dataRatios->SetBranchAddress("lumiIndex", &lumiIndex);
+	dataRatios->SetBranchAddress("lumi", &lumi);
+	dataRatios->SetBranchAddress("ratio", &ratio);
+	
+	// Prepare mcRatios Tree to be written. mcRatios shares branch addresses with dataRatios.
+	TFile* file = new TFile("mcRatios2.root", "recreate");
+	TTree* mcRatios = new TTree("mcRatios", "ratios from Geant4");
+	mcRatios->Branch("ieta", &ieta, "ieta/I");
+	mcRatios->Branch("lumiIndex", &lumiIndex, "lumiIndex/I");
+	mcRatios->Branch("lumi", &lumi, "lumi/D");
+	mcRatios->Branch("ratio", &ratio, "ratio/D");
+
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		// Define parameters for DoseToMu and calculate undamaged efficiency.
+		double par[2] = {0.2, 0.008};
+		double muTileUndamaged = 0.022;
+
+		for (unsigned int j=0; j < lumis.size(); j++) {
+			dataRatios->GetEntryWithIndex(i+22, j); // Get entry with arbitrary ieta and lumiIndex == j.
+			//stringstream cutFormula; cutFormula << "ieta == " << i << " && lumiIndex == " << j;
+			//cout << cutFormula.str() << endl;
+			//dataRatios->Draw("ieta:lumi:ratio:lumiIndex", cutFormula.str().c_str(), "goff");
+			//ieta = (dataRatios->GetVal(1))[0];
+
+			cout << "ieta: " << ieta << endl; 
+			cout << "lumiIndex: " << lumiIndex << endl; 
+			cout << "lumi: " << lumi << endl; 
+			cout << "ratio: " << ratio << endl; 
+
+			double dose = (doseMapLayer1[ieta] / 100) * lumi; // Dose[kGy] per fb-1.
+			double muTile = DoseToMu(&dose, par);
+			double efficiency = functionV[i]->Eval(muTile);
+			double efficiencyUndamaged = functionV[i]->Eval(muTileUndamaged);
+			ratio = efficiency / efficiencyUndamaged;
+			double ratioFromData = (ratiosMapData[ieta])[j];
+
+//			if(j == lumis.size()-1) {
+//				cout << "ieta: " << i+22 << endl;
+//				cout << "dose: " << dose << endl; 
+//				cout << "muTile: " << muTile << endl; 
+//				cout << "efficiency: " << efficiency << endl; 
+//				cout << "efficiencyUndamaged: " << efficiencyUndamaged << endl; 
+//				cout << "ratio: " << ratio << endl; 
+//				cout << "ratioFromData: " << ratioFromData << endl; 
+//				cout << endl;
+//			}
+			mcRatios->Fill();
+		}
+	}
+
+	int nEntries = dataRatios->GetEntries();
+	for(int i=0; i < nEntries; i++) {
+//		dataRatios->GetEntry(i);
+//
+//		cout << "ieta: " << ieta << endl; 
+//		cout << "lumiIndex: " << lumiIndex << endl; 
+//		cout << "lumi: " << lumi << endl; 
+//		cout << "ratio: " << ratio << endl; 
+	}
+	
+	mcRatios->Write();
+
+}
+
+void readRatios(string inputFile)
+{
+	TFile* file = new TFile("dataRatios.root", "recreate");
+	TTree* dataRatios = new TTree("dataRatios", "ratios from laser data");
+	Int_t ieta, lumiIndex;
+	lumiIndex = 0;
+	Double_t lumi, ratio;
+	dataRatios->Branch("ieta", &ieta, "ieta/I");
+	dataRatios->Branch("lumiIndex", &lumiIndex, "lumiIndex/I");
+	dataRatios->Branch("lumi", &lumi, "lumi/D");
+	dataRatios->Branch("ratio", &ratio, "ratio/D");
+
+	ifstream inputStream(inputFile.c_str());
+	string line;
+	if(inputStream.is_open())
+	{
+		while(getline(inputStream, line))
+		{
+			if(line[0]=='#') continue; //Skip comment lines
+			else {
+				// Process the line to get ieta and dose.
+				//double lumi;
+				double ratios[13];
+				processLaserDataLine(line, lumi, ratios);
+				for (int i=0; i < 13; i++) {
+					ieta = i + 17;
+					ratio = ratios[i];
+
+					cout << "ieta: " << ieta << endl; 
+					cout << "lumiIndex: " << lumiIndex << endl; 
+					cout << "lumi: " << lumi << endl; 
+					cout << "ratio: " << ratio << endl << endl; 
+
+					dataRatios->Fill();
+					//cout << "ratios[i] " <<ratios[i] << endl;
+				}
+				lumiIndex = lumiIndex +1; 
+			}
+		}
+	}
+	else {cout <<"Error: Input file not found." <<endl;}
+	dataRatios->BuildIndex("ieta", "lumiIndex");
+	dataRatios->Write();
+}
+
+void ratiosPlot(int ieta = 29) //bool doPlot = false)
+{
+	readRatios("../HELaserData.txt");
+
+//	TCanvas* c1 = new TCanvas("c1","canvas1",800,600);
+//	TGraph* graph;
+//	graph = new TGraph(lumis.size(), &lumis[0], &((ratiosMap[ieta])[0]));
+//	c1->cd();
+//	graph->Draw("AP");
+}
