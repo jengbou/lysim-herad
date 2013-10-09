@@ -1,6 +1,6 @@
-void GetTrees(TTree* &mc, TTree* &data);
+void GetTrees(TTree* &mc, TTree* &data, const char* runName);
 
-void Plot()
+void Plot(int ieta, const char* runName)
 {
 	// Vector of colors.
 	vector<Color_t> colors(18, kBlack);
@@ -22,9 +22,11 @@ void Plot()
 	}
 
 	TTree *mcRatios, *dataRatios;
-	GetTrees(mcRatios, dataRatios);
+	GetTrees(mcRatios, dataRatios, runName);
 
-	mcRatios->Draw("ieta:lumi:ratio:lumiIndex", "ieta==29", "goff");
+	stringstream cut;
+	cut << "ieta==" << ieta;
+	mcRatios->Draw("ieta:lumi:ratio:lumiIndex", cut.str().c_str(), "goff");
 	int nMC = mcRatios->GetSelectedRows();
 	double* temp; 
 
@@ -43,7 +45,7 @@ void Plot()
 	ratiosMC = new double[nMC];
 	for(int i=0; i<nMC; i++) {ratiosMC[i] = temp[i];}
 
-	dataRatios->Draw("ieta:lumi:ratio:lumiIndex", "ieta==29", "goff");
+	dataRatios->Draw("ieta:lumi:ratio:lumiIndex", cut.str().c_str(), "goff");
 	int nData = dataRatios->GetSelectedRows();
 	double* ietasData = dataRatios->GetVal(1);
 	double* lumisData = dataRatios->GetVal(2);
@@ -64,15 +66,29 @@ void Plot()
 	ratiosData = new double[nData];
 	for(int i=0; i<nData; i++) {ratiosData[i] = temp[i];}
 
-	TCanvas* canvas = new TCanvas("canvas","canvas title",800,600);
-	//canvas->Divide(2,1);
+	double* DataVsMC;
+	DataVsMC = new double[nData];
+	if (nData == nMC) {
+		for(int i=0; i<nData; i++) {
+			if (ietasData[i]==ietasMC[i] && lumisData[i]==lumisMC[i]) {
+				DataVsMC[i] = ratiosData[i] / ratiosMC[i];
+			}
+			else
+				{cout<< "Data and MC ietas or lumis do not match!" <<endl;}
+		}
+	} 
+	else
+	{cout<< "Data and MC tree entry numbers do not match!" <<endl;}
+
+	TCanvas* canvas = new TCanvas("canvas","canvas title",1400,600);
+	canvas->Divide(2,1);
 
 	TGraph* graphData;
 	graphData = new TGraph(nData, lumisData, ratiosData);
 	graphData->SetTitle("");
 	graphData->GetXaxis()->SetTitle("lumi [fb^{-1}]");
 	graphData->GetYaxis()->SetTitle("damaged/undamaged ratio");
-	graphData->GetYaxis()->SetRangeUser(0.5, 1.2);
+	graphData->GetYaxis()->SetRangeUser(0.0, 1.2);
 	graphData->SetMarkerColor(colors[0]);
 	canvas->cd(1);
 	graphData->Draw("AP");
@@ -93,15 +109,28 @@ void Plot()
 	leg->SetTextFont(42);
 	leg->Draw();
 
+	TGraph* graphDataVsMC;
+	graphDataVsMC = new TGraph(nData, lumisData, DataVsMC);
+	graphDataVsMC->SetTitle("");
+	graphDataVsMC->GetXaxis()->SetTitle("lumi [fb^{-1}]");
+	graphDataVsMC->GetYaxis()->SetTitle("Data/MC");
+	//graphDataVsMC->GetYaxis()->SetRangeUser(0.5, 1.2);
+	graphDataVsMC->SetMarkerColor(colors[0]);
+	canvas->cd(2);
+	graphDataVsMC->Draw("AP");
+
 //	delete lumisData;
 //	cout<<ietas<<endl;
 }
 
-void GetTrees(TTree* &mc, TTree* &data)
+void GetTrees(TTree* &mc, TTree* &data, const char* runName)
 {
 	TFile* dataFile = new TFile("dataRatios.root");
 	data = (TTree*)dataFile->Get("dataRatios");
 
-	TFile* mcFile = new TFile("mcRatios2.root");
+	TString mcFileName(runName);
+	mcFileName.Prepend("mcRatios-").Append(".root");
+
+	TFile* mcFile = new TFile(mcFileName.Data());
 	mc =  (TTree*)mcFile->Get("mcRatios");
 }
