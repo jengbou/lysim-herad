@@ -73,16 +73,20 @@ public:
 	
 	void SetEnergy(G4double energy) {fEnergy = energy;}
 	void SetPhotonCount(G4int photonCount){fPhotonCount = photonCount;}
+	void SetTrackLength(G4double trackLength) {fTrackLength = trackLength;}
 	
 	void AddEnergy(G4double energy) {fEnergy += energy;}
 	void IncPhotonCount(){fPhotonCount++;}
+	void AddTrackLength(G4double trackLength) {fTrackLength += trackLength;}
 	
 	G4double GetEnergy(){ return fEnergy; }
 	G4int GetPhotonCount(){ return fPhotonCount;}
+	G4double GetTrackLength(){ return fTrackLength; }
 
 private:
 	G4double		fEnergy; //Total photon energy deposited in PMT
-	G4int			fPhotonCount; //Total number of photons detected by PMT
+	G4int			fPhotonCount; //Total number of photons detected by PMT. Should only be 1 at maximum.
+	G4double		fTrackLength; //Total track length of photon.
 
 
 };

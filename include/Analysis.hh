@@ -4,12 +4,15 @@
 #include "G4Event.hh"
 #include "G4Run.hh"
 //ROOT
-//#include "TH1D.h"
+//#include <TH1D.h>
 
 #define NUMRUNS 10
 
 class LYSimDetectorConstruction;
 class AnalysisMessenger;
+		
+class TFile;
+class TH1D;
 
 /*!
  * \brief Analysis class
@@ -69,6 +72,10 @@ private:
 	AnalysisMessenger* fMessenger;
 	//Pointer to DetectorConstruction class for access to detector properties
     LYSimDetectorConstruction* DetectorConstruction;   
+	//ROOT file
+	TFile* RootFile;
+	//Histogram of track lengths
+	TH1D* TrackLengthHisto;
     //Output file name
     std::string fOutputFileName;
     //ROOT file name

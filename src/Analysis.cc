@@ -11,7 +11,8 @@ using namespace std;
 
 //ROOT Stuff
 //#include "TProfile.h"
-//#include "TFile.h"
+#include "TFile.h"
+#include "TH1D.h"
 
 Analysis* Analysis::singleton = 0;
 
@@ -63,25 +64,35 @@ void Analysis::EndOfEvent(const G4Event* anEvent)
 		EventEnergy = hit->GetEnergy();
 		EventPhotonCount = hit->GetPhotonCount();
 		HitCount++;
+		G4double trackLength = hit->GetTrackLength();
+		TrackLengthHisto->Fill(trackLength/cm);
 	}
 	//G4cout	<< "Energy deposited in PMT this event is " << G4BestUnit(EventEnergy,"Energy") << G4endl
 	//		<< "# of photon hits in PMT this event is " << EventPhotonCount << G4endl;
 	//EnergyHist->Fill(EventEnergy/eV);
 	//PhotonHitsHist->Fill(EventPhotonCount);
 	
+	//// Add TrackLength to histogram.
+	//int trajectorySize = anEvent->GetTrajectoryContainer()->size();	
+	//cout << "#############" << endl << "Number of trajectories is " << trajectorySize << endl;
+
 }
 
 
 void Analysis::PrepareNewRun(const G4Run* /*aRun*/ )
 {
+	G4cout << "Analysis::PrepareNewRun() begin" << G4endl;
 	//Reset variables relative to the run
 	PhotonCount = 0;
 	HitCount = 0; //
+	RootFile = new TFile("test.root", "RECREATE");
+	TrackLengthHisto = new TH1D("test", "test histogram of tracklengths", 50, 0., 5000.);
 }
 
 
 void Analysis::EndOfRun(const G4Run* aRun)
 {
+	G4cout << "Analysis::EndOfRun() begin" << G4endl;
 	
 	//Write to file
 	//~ TFile* rootfile = TFile::Open(fROOTFileName.c_str(),"recreate");
@@ -104,4 +115,8 @@ void Analysis::EndOfRun(const G4Run* aRun)
 		G4cout << inducedMuTile << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	}
 	outputfile.close();
+
+	if(TrackLengthHisto) {TrackLengthHisto->Write();}
+	RootFile->Close();
+	G4cout << "Analysis::EndOfRun() end" << G4endl;
 }

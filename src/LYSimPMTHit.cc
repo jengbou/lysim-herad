@@ -37,6 +37,7 @@ LYSimPMTHit::LYSimPMTHit()
 {
 	fEnergy = 0.;
 	fPhotonCount = 0;
+	fTrackLength = 0;
 }
 
 LYSimPMTHit::~LYSimPMTHit() { }
@@ -51,13 +52,15 @@ const LYSimPMTHit& LYSimPMTHit::operator=(const LYSimPMTHit &right)
 {
 	fEnergy	= right.fEnergy;
 	fPhotonCount = right.fPhotonCount;
+	fTrackLength = right.fTrackLength;
 	return *this;
 }
 
 G4int LYSimPMTHit::operator==(const LYSimPMTHit& right) const
 {
 	return fEnergy == right.fEnergy &&
-	fPhotonCount == right.fPhotonCount;
+	fPhotonCount == right.fPhotonCount &&
+	fTrackLength == right.fTrackLength;
 }
 
 void LYSimPMTHit::Draw(){ }

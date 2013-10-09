@@ -85,6 +85,7 @@ G4bool LYSimPMTSD::ProcessHits_constStep(const G4Step* aStep, G4TouchableHistory
 
 	hit->AddEnergy(theTrack->GetTotalEnergy());
 	hit->IncPhotonCount(); //increment hit for the selected pmt
+	hit->AddTrackLength(theTrack->GetTrackLength());
 	
 	return true;
 
