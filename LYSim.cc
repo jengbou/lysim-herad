@@ -103,6 +103,21 @@ int main(int argc,char** argv)
 		Analysis::GetInstance()->SetOutputFile(outFileName);
 		UImanager->ApplyCommand(command+fileName);
 	}
+	else if (argc == 4) {
+		// batch mode
+		G4String command = "/control/execute ";
+		G4String fileName = argv[1];
+
+		std::string outFileName = argv[2];
+		G4cout<<"outFileName is "<< outFileName <<G4endl; 
+		Analysis::GetInstance()->SetOutputFile(outFileName);
+
+		std::string rootFileName = argv[3];
+		G4cout<<"rootFileName is "<< rootFileName <<G4endl; 
+		Analysis::GetInstance()->SetROOTFile(rootFileName);
+
+		UImanager->ApplyCommand(command+fileName);
+	}
 	else {
 		// interactive mode : define UI session
 		//#ifdef G4UI_USE

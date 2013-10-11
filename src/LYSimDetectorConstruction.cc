@@ -1316,7 +1316,7 @@ void LYSimDetectorConstruction::DefineMaterials()
 		G4double RefractiveIndex[nEntries] = {1.59, 1.59};
 
 		G4double baseAbsLength = GetTileAbsLength();
-		G4double baseMu = 0.01 / cm; // 1 / baseAbsLength;
+		G4double baseMu = 0; //0.01 / cm; // 1 / baseAbsLength;
 		G4double inducedMu = GetInducedMuTile(); 
 		G4double mu = baseMu + inducedMu;
 		G4double absLength = 1 / mu;

@@ -150,6 +150,7 @@ LYSimDetectorMessenger::LYSimDetectorMessenger(LYSimDetectorConstruction * Det)
 
 LYSimDetectorMessenger::~LYSimDetectorMessenger()
 {
+	G4cout<<"~LYSimDetectorMessenger() begin"<<G4endl;
 	delete detDir;
 	delete UpdateCmd;
 	delete SetFiberHoleCmd;
@@ -172,6 +173,7 @@ LYSimDetectorMessenger::~LYSimDetectorMessenger()
 	delete SetTileAbsLengthCmd;
 	delete SetInducedMuTileCmd;
 	delete SetInducedMuFiberCmd;
+	G4cout<<"~LYSimDetectorMessenger() end"<<G4endl;
 }
 
 void LYSimDetectorMessenger::SetNewValue(G4UIcommand* command,G4String val)

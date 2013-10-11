@@ -85,8 +85,8 @@ void Analysis::PrepareNewRun(const G4Run* /*aRun*/ )
 	//Reset variables relative to the run
 	PhotonCount = 0;
 	HitCount = 0; //
-	RootFile = new TFile("test.root", "RECREATE");
-	TrackLengthHisto = new TH1D("test", "test histogram of tracklengths", 50, 0., 5000.);
+	RootFile = new TFile(fROOTFileName.c_str(), "RECREATE");
+	TrackLengthHisto = new TH1D("test", "test histogram of tracklengths", 500, 0., 1000.);
 }
 
 
