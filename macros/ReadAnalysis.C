@@ -834,7 +834,7 @@ void temp(int minLumiIndex, int maxLumiIndex, double refAttLength, double lumiof
 }
 */
 
-void MakeTrees(const char* runName) 
+void MakeTrees(const char* runName, double doseFactor, const char* treeLabel) 
 {
 	// Vector of colors.
 	vector<Color_t> colors(18, kBlack);
@@ -1038,7 +1038,7 @@ void MakeTrees(const char* runName)
 	
 	// Prepare mcRatios Tree to be written. mcRatios shares branch addresses with dataRatios.
 	TString mcFileName(runName);
-	mcFileName.Prepend("mcRatios-").Append(".root");
+	mcFileName.Prepend("mcRatios-").Append("-").Append(treeLabel).Append(".root");
 	TFile* file = new TFile(mcFileName.Data(), "recreate");
 	if (!file->IsOpen()) {cout << "mcRatios.root not found"; return;}
 	TTree* mcRatios = new TTree("mcRatios", "ratios from Geant4");
@@ -1065,9 +1065,12 @@ void MakeTrees(const char* runName)
 			//cout << "lumi: " << lumi << endl; 
 			//cout << "ratio: " << ratio << endl; 
 
-			double dose = (doseMapLayer1[ieta] / 100) * lumi; // Dose[kGy] per fb-1.
+			double dose = doseFactor * (doseMapLayer1[ieta] / 100) * lumi; // Dose[kGy] per fb-1.
 			double muTile = DoseToMu(&dose, par);
 			double efficiency = functionV[i]->Eval(muTile);
+			if(j==0) {
+				muTileUndamaged = muTile;
+			}
 			double efficiencyUndamaged = functionV[i]->Eval(muTileUndamaged);
 			ratio = efficiency / efficiencyUndamaged;
 			double ratioFromData = (ratiosMapData[ieta])[j];
