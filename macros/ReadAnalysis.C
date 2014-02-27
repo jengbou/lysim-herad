@@ -15,6 +15,7 @@
 #include <TImageDump.h>
 #include <TFile.h>
 #include <TTree.h>
+#include "Math/Interpolator.h"
 
 using TMath::Exp;
 using TMath::Power;
@@ -164,17 +165,19 @@ Double_t myfunction2(const Double_t *x, Double_t *par)
 Double_t EfficiencyVsMu(const Double_t *x, Double_t *par)
 {
 	Double_t xx =x[0];
-	Double_t f = Exp(par[2]*pow(xx, 2) + par[1]*(xx) + par[0]);
+	Double_t f = Exp(par[3]*pow(xx, 3) + par[2]*pow(xx, 2) + par[1]*(xx) + par[0]);
 	return f;
 }
 
 // Inverse of EfficiencyVsMu
+/*
 Double_t MuVsEfficiency(const Double_t *x, Double_t *par)
 {
 	Double_t xx =x[0];
 	Double_t f = (-par[1] - sqrt(pow(par[1], 2) - 4*par[2]*(par[0] - Log(xx)))) / (2*par[2]);
 	return f;
 }
+*/
 
 // Test EfficiencyVsMu and inverse
 /*
@@ -220,6 +223,18 @@ Double_t DoseToMu(const Double_t *x, Double_t *par)
 {
 	Double_t xx = x[0];
 	Double_t f = par[1] * xx + par[0];
+	return f;
+}
+
+// Function to map (dose, dose rate) in kGy to mu(Tile).
+// mu(Fiber) is implicitly set in simulation. 
+Double_t CalculateMu(const Double_t *x, Double_t *par)
+{
+	Double_t dose = x[0];
+	Double_t doseRate = x[1];
+	Double_t doseRateBase = par[2];
+	Double_t A = par[3];
+	Double_t f = ( 1 - A * log10(doseRate/doseRateBase) ) * par[1] * dose + par[0];
 	return f;
 }
 
@@ -921,7 +936,7 @@ void MakeTrees(const char* runName, double doseFactor, const char* treeLabel)
 		graphsAll[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
 		graphsAll[i]->GetYaxis()->SetTitle("Efficiency");
 		//graphsAll[i]->GetXaxis()->SetLimits(0.0, 0.05);
-		graphsAll[i]->GetYaxis()->SetRangeUser(8e-3, 2e-1);
+		graphsAll[i]->GetYaxis()->SetRangeUser(1e-5, 2e-1);
 		graphsAll[i]->SetMarkerColor(colors[i]);
 		graphsAll[i]->SetMarkerSize(0.5);
 		graphsAll[i]->SetMarkerStyle(21);
@@ -942,16 +957,16 @@ void MakeTrees(const char* runName, double doseFactor, const char* treeLabel)
 
 	vector<TF1*> functionV (graphsAll.size());
 	for (unsigned int i=0; i < graphsAll.size(); i++) {
-		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 3);
+		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 4);
 	}
 	// Fit all graphs in graphsAll to EfficiencyVsMu.
 	for (unsigned int i=0; i < graphsAll.size(); i++) {
-		Double_t par[] = {1.0, 1.0, 1.0};
+		Double_t par[] = {1.0, 1.0, 1.0, -1.0};
 		cout << endl << "ieta: " << i+22 << endl; //*-*
 		functionV[i]->SetParameters(par);
 		//functionV[i]->FixParameter(2, 0.0); //*-* Only fit to exp(linear function).
 		functionV[i]->SetLineColor(colors[i]);
-		functionV[i]->SetParNames("p0", "p1", "p2");
+		functionV[i]->SetParNames("p0", "p1", "p2", "p3");
 		graphsAll[i]->Fit(functionV[i], "", "", 0.01, 0.12);
 	}
 
@@ -1016,7 +1031,7 @@ void MakeTrees(const char* runName, double doseFactor, const char* treeLabel)
 	// Read dose and fluence map data files.
 	std::map<int, double> doseMapLayer1;
 	std::map<int, double> fluenceMapLayer1;
-	readDoseFile("../doseLayer1.txt", doseMapLayer1, fluenceMapLayer1);
+	readDoseFile("../doseLayer1Mars.txt", doseMapLayer1, fluenceMapLayer1); //*-*
 
 	// Variables to read and write from Trees.
 	Int_t ieta, lumiIndex;
@@ -1050,8 +1065,11 @@ void MakeTrees(const char* runName, double doseFactor, const char* treeLabel)
 	for (unsigned int i=0; i < graphsAll.size(); i++) {
 		// Define parameters for DoseToMu and calculate undamaged efficiency.
 		//double par[2] = {0.02, 0.002};
-		double par[2] = {0.02, 0.002};
-		double muTileUndamaged = 0.02;
+		double doseRateBase = 2.67e-3;
+		double A = 0.5;
+		double par[2] = {0.023, 0.001};
+		double par2[4] = {0.023, 0.001, doseRateBase, A};
+		double muTileUndamaged = 0.023;
 
 		for (unsigned int j=0; j < lumis.size(); j++) {
 			dataRatios->GetEntryWithIndex(i+22, j); // Get entry with arbitrary ieta and lumiIndex == j.
@@ -1066,12 +1084,17 @@ void MakeTrees(const char* runName, double doseFactor, const char* treeLabel)
 			//cout << "ratio: " << ratio << endl; 
 
 			double dose = doseFactor * (doseMapLayer1[ieta] / 100) * lumi; // Dose[kGy] per fb-1.
+			double doseRate = doseMapLayer1[ieta] * 3.6e-5; // Dose rate [kGy/hr]
+			double xx[2] = {dose, doseRate};
 			double muTile = DoseToMu(&dose, par);
-			double efficiency = functionV[i]->Eval(muTile);
+			//double muTile = CalculateMu(xx, par2);
+			//double efficiency = functionV[i]->Eval(muTile);
+			double efficiency = graphsAll[i]->Eval(muTile); //*-*
 			if(j==0) {
 				muTileUndamaged = muTile;
 			}
-			double efficiencyUndamaged = functionV[i]->Eval(muTileUndamaged);
+			//double efficiencyUndamaged = functionV[i]->Eval(muTileUndamaged);
+			double efficiencyUndamaged = graphsAll[i]->Eval(muTileUndamaged); //*-*
 			ratio = efficiency / efficiencyUndamaged;
 			double ratioFromData = (ratiosMapData[ieta])[j];
 
@@ -1100,6 +1123,181 @@ void MakeTrees(const char* runName, double doseFactor, const char* treeLabel)
 	}
 	
 	mcRatios->Write();
+
+}
+
+//Test
+void test2(const char* runName) 
+{
+	// Vector of colors.
+	vector<Color_t> colors(18, kBlack);
+	{
+		colors[0] = kBlue;
+		colors[1] = kOrange;
+		colors[2] = kGreen;
+		colors[3] = kRed;
+		colors[4] = kCyan;
+		colors[5] = kMagenta;
+		// Define colors[6] through colors[11]
+		for (int i = 0; i < 6; i++ ) {
+			colors[i+6] = colors[i] + 1;
+		}
+		// Define colors[12] through colors[17]
+		for (int i = 0; i < 6; i++ ) {
+			colors[i+12] = colors[i] + 2;
+		}
+	}
+	
+	TCanvas* c1;
+	c1 = new TCanvas("c1", "Efficiency vs Mu", 800, 600);
+	//gPad->SetLogx();
+	//gPad->SetLogy();
+	
+	// graphsAll contains Efficiency vs Mu data for all tiles from the Geant4 simulations.
+	// namesAll contains names for all graphs in graphsAll.
+	// graphsTypeX contains Efficiency vs Lambda data for tiles of type X from the Geant4 simulations.
+	vector<TGraphErrors*> graphsLayer1, graphsLayer7, graphsAll, graphsAllLog;
+	vector<string> namesAll;
+
+	// Read from Analysis files and add to graphsTypeX, and graphsAll.
+	// (Only reading type 1 tiles.)
+	{
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 22)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 23)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 24)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 25)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 26)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 27)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 28)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 29)));
+		
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
+	//	
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
+		
+		// Add all graphs from graphsLayer1 to graphsAll. Add all legend names to namesAll.
+		for (unsigned int i=0; i < graphsLayer1.size(); i++) {
+			graphsAll.push_back(graphsLayer1[i]);
+			stringstream name;
+			name << "ieta " << (i+22) << "Layer1";
+			namesAll.push_back(name.str());
+		}
+	}
+
+	TLegend* leg = new TLegend(0.7, 0.6, 0.9, 0.85);
+	// Run through all graphs in graphsAll and modify error bars if necessary.
+	// Push log version of graphsAll into graphsAllLog.
+	// Set graph properties of all graphs in graphsAll and draw to c1 pad 1.
+	// Add all legend names from namesAll to leg.
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		//cout << graphsAll.size() << ": " << graphsAll[i] << endl;
+		
+		int n = graphsAll[i]->GetN();
+		double* xV = graphsAll[i]->GetX();
+		// Offset x-values for clarity.
+		// (Disabled)
+		for (int j=0; j < n; j++) {
+			//xV[j] += i*0.0002;
+		}
+		double* yV = graphsAll[i]->GetY();
+		double* exV = graphsAll[i]->GetEX();
+		double* eyV = graphsAll[i]->GetEY();
+	
+		graphsAll[i] = new TGraphErrors(n, xV, yV, exV, eyV);
+		graphsAll[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
+		graphsAll[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
+		graphsAll[i]->GetYaxis()->SetTitle("Efficiency");
+		//graphsAll[i]->GetXaxis()->SetLimits(0.0, 0.05);
+		graphsAll[i]->GetYaxis()->SetRangeUser(1e-5, 2e-1);
+		graphsAll[i]->SetMarkerColor(colors[i]);
+		graphsAll[i]->SetMarkerSize(0.5);
+		graphsAll[i]->SetMarkerStyle(21);
+
+		graphsAllLog.push_back( (TGraphErrors*) graphsAll[i]->Clone() );
+
+		c1->cd(1);
+		c1->SetLogy();
+		if(i==0) {
+			graphsAll[i]->Draw("AP");
+		}
+		else {
+			graphsAll[i]->Draw("P same");
+		}
+	
+		leg->AddEntry(graphsAll[i], namesAll[i].c_str(), "p");
+	}
+
+	vector<TF1*> functionV (graphsAll.size());
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 4);
+	}
+	for (unsigned int i=0; i==0; i++) {
+		double x[1000], y[1000];
+		for (int j = 0; j<1000; j++) {
+			x[j] = 0.0 + (0.15 - 0.0) * j/1000;
+			y[j] = graphsAll[i]->Eval(x[j], 0, "S");
+		}
+		TGraph* fit = new TGraph(1000, x, y);
+		fit->Draw("C same");
+	}
+
+	// Make log version of graphsAllLog
+	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
+		//cout << graphsAllLogLog.size() << ": " << graphsAllLog[i] << endl;
+		
+		int n = graphsAllLog[i]->GetN();
+		double* xV = graphsAllLog[i]->GetX();
+		double* yV = graphsAllLog[i]->GetY();
+		for (int j=0; j < n; j++) {
+			yV[j] = log10( yV[j] );
+		}
+		double* exV = graphsAllLog[i]->GetEX();
+		double* eyV = graphsAllLog[i]->GetEY();
+
+		graphsAllLog[i] = new TGraphErrors(n, xV, yV, exV, eyV);
+		graphsAllLog[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
+		graphsAllLog[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
+		graphsAllLog[i]->GetYaxis()->SetTitle("Log(Efficiency)");
+		//graphsAllLog[i]->GetXaxis()->SetLimits(-0.005, 0.045);
+		//graphsAllLog[i]->GetYaxis()->SetRangeUser(1e-6, 1e0);
+		graphsAllLog[i]->SetMarkerColor(colors[i]);
+		graphsAllLog[i]->SetMarkerSize(0.5);
+		graphsAllLog[i]->SetMarkerStyle(21);
+
+		//c1->cd(1);
+		//if(i==0) {
+		//	graphsAllLog[i]->Draw("AP");
+		//}
+		//else {
+		//	graphsAllLog[i]->Draw("P same");
+		//}
+	}
+
+	// Draw leg to c1 pad 1.
+	{
+		c1->cd(1);
+		leg->SetFillColor(0);
+		leg->SetBorderSize(0);
+		leg->SetTextSize(0.03);
+		leg->SetTextFont(42);
+		leg->Draw();
+	}
+
+	vector<TF1*> functionLogV (graphsAllLog.size(), new TF1("LogEfficiencyVsMu", LogEfficiencyVsMu, 0.0, 0.0, 3));
+	// Fit all graphs in graphsAllLog to myfunction.
+	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
+		Double_t par[] = {1.0, 1.0, 1.0};
+		functionLogV[i]->SetParameters(par);
+		functionLogV[i]->SetLineColor(colors[i]);
+		functionLogV[i]->SetParNames("p0", "p1", "p2");
+		//*-*graphsAllLog[i]->Fit(functionLogV[i], "", "", 0.01, 0.045);
+	}
 
 }
 
@@ -1169,3 +1367,303 @@ void test(const char* input)
 	cout << fileName->Data() <<endl;
 	readAnalysisFile("../run5bc/Analysis-run5bc_layer1_ieta22.txt");
 }
+
+// Copy of MakeTrees to do enable fitting of dose factor.
+void FitEffVsMu(const char* runName, double doseFactor)//, const char* treeLabel) 
+{
+	// Vector of colors.
+	vector<Color_t> colors(18, kBlack);
+	{
+		colors[0] = kBlue;
+		colors[1] = kOrange;
+		colors[2] = kGreen;
+		colors[3] = kRed;
+		colors[4] = kCyan;
+		colors[5] = kMagenta;
+		// Define colors[6] through colors[11]
+		for (int i = 0; i < 6; i++ ) {
+			colors[i+6] = colors[i] + 1;
+		}
+		// Define colors[12] through colors[17]
+		for (int i = 0; i < 6; i++ ) {
+			colors[i+12] = colors[i] + 2;
+		}
+	}
+	
+	TCanvas* c1;
+	c1 = new TCanvas("c1", "Efficiency vs Mu", 800, 600);
+	//gPad->SetLogx();
+	//gPad->SetLogy();
+	
+	// graphsAll contains Efficiency vs Mu data for all tiles from the Geant4 simulations.
+	// namesAll contains names for all graphs in graphsAll.
+	// graphsTypeX contains Efficiency vs Lambda data for tiles of type X from the Geant4 simulations.
+	vector<TGraphErrors*> graphsLayer1, graphsLayer7, graphsAll, graphsAllLog;
+	vector<string> namesAll;
+
+	// Read from Analysis files and add to graphsTypeX, and graphsAll.
+	// (Only reading type 1 tiles.)
+	{
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 22)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 23)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 24)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 25)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 26)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 27)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 28)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 1, 29)));
+
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 22)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 23)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 24)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 25)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 26)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 27)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 28)));
+		graphsLayer1.push_back(readAnalysisFile(constructFileName(runName, 7, 29)));
+		
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
+	//	graphsType2.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
+	//	
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta17.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta18.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta19.txt"));
+	//	graphsType3.push_back(readAnalysisFile("../run5/Analysis-run5_layer1_ieta20.txt"));
+		
+		// Add all graphs from graphsLayer1 to graphsAll. Add all legend names to namesAll.
+		for (unsigned int i=0; i < graphsLayer1.size(); i++) {
+			graphsAll.push_back(graphsLayer1[i]);
+			stringstream name;
+			name << "ieta " << (i+22) << "Layer1";
+			namesAll.push_back(name.str());
+		}
+	}
+
+	TLegend* leg = new TLegend(0.7, 0.6, 0.9, 0.85);
+	// Run through all graphs in graphsAll and modify error bars if necessary.
+	// Push log version of graphsAll into graphsAllLog.
+	// Set graph properties of all graphs in graphsAll and draw to c1 pad 1.
+	// Add all legend names from namesAll to leg.
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		//cout << graphsAll.size() << ": " << graphsAll[i] << endl;
+		
+		int n = graphsAll[i]->GetN();
+		double* xV = graphsAll[i]->GetX();
+		// Offset x-values for clarity.
+		// (Disabled)
+		for (int j=0; j < n; j++) {
+			//xV[j] += i*0.0002;
+		}
+		double* yV = graphsAll[i]->GetY();
+		double* exV = graphsAll[i]->GetEX();
+		double* eyV = graphsAll[i]->GetEY();
+	
+		graphsAll[i] = new TGraphErrors(n, xV, yV, exV, eyV);
+		graphsAll[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
+		graphsAll[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
+		graphsAll[i]->GetYaxis()->SetTitle("Efficiency");
+		//graphsAll[i]->GetXaxis()->SetLimits(0.0, 0.05);
+		graphsAll[i]->GetYaxis()->SetRangeUser(1e-5, 2e-1);
+		graphsAll[i]->SetMarkerColor(colors[i]);
+		graphsAll[i]->SetMarkerSize(0.5);
+		graphsAll[i]->SetMarkerStyle(21);
+
+		graphsAllLog.push_back( (TGraphErrors*) graphsAll[i]->Clone() );
+
+		c1->cd(1);
+		c1->SetLogy();
+		if(i==0) {
+			graphsAll[i]->Draw("AP");
+		}
+		else {
+			graphsAll[i]->Draw("P same");
+		}
+	
+		leg->AddEntry(graphsAll[i], namesAll[i].c_str(), "p");
+	}
+
+	ofstream outfile;
+	outfile.open("EffVsMuFitParametersRun13.txt");
+
+	vector<TF1*> functionV (graphsAll.size());
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 4);
+	}
+	// Fit all graphs in graphsAll to EfficiencyVsMu.
+	outfile << "layer\tieta\tp1\tp0" << endl;
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		Double_t par[] = {1.0, 1.0, 1.0, -1.0};
+		functionV[i]->SetParameters(par);
+		functionV[i]->FixParameter(3, 0.0); //*-* Only fit to exp(linear function).
+		functionV[i]->FixParameter(2, 0.0); //*-* Only fit to exp(linear function).
+		functionV[i]->SetLineColor(colors[i]);
+		functionV[i]->SetParNames("p0", "p1", "p2", "p3");
+		graphsAll[i]->Fit(functionV[i], "", "", 0.04, 0.12);
+
+		int ieta = (i % 8) + 22;
+		int layer = i<8 ? 1 : 7;
+		double p1 = functionV[i]->GetParameter("p1");
+		double p0 = functionV[i]->GetParameter("p0");
+		outfile << layer << "\t" << ieta << "\t";//*-*
+		outfile << p1 << "\t" << p0 << endl;
+	}
+
+	// Make log version of graphsAllLog
+	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
+		//cout << graphsAllLogLog.size() << ": " << graphsAllLog[i] << endl;
+		
+		int n = graphsAllLog[i]->GetN();
+		double* xV = graphsAllLog[i]->GetX();
+		double* yV = graphsAllLog[i]->GetY();
+		for (int j=0; j < n; j++) {
+			yV[j] = log10( yV[j] );
+		}
+		double* exV = graphsAllLog[i]->GetEX();
+		double* eyV = graphsAllLog[i]->GetEY();
+
+		graphsAllLog[i] = new TGraphErrors(n, xV, yV, exV, eyV);
+		graphsAllLog[i]->SetTitle("");//("Light collection efficiency vs Absorption Length");
+		graphsAllLog[i]->GetXaxis()->SetTitle("Absorption coefficient [cm^{-1}]");
+		graphsAllLog[i]->GetYaxis()->SetTitle("Log(Efficiency)");
+		//graphsAllLog[i]->GetXaxis()->SetLimits(-0.005, 0.045);
+		//graphsAllLog[i]->GetYaxis()->SetRangeUser(1e-6, 1e0);
+		graphsAllLog[i]->SetMarkerColor(colors[i]);
+		graphsAllLog[i]->SetMarkerSize(0.5);
+		graphsAllLog[i]->SetMarkerStyle(21);
+
+		//c1->cd(1);
+		//if(i==0) {
+		//	graphsAllLog[i]->Draw("AP");
+		//}
+		//else {
+		//	graphsAllLog[i]->Draw("P same");
+		//}
+	}
+
+	// Draw leg to c1 pad 1.
+	{
+		c1->cd(1);
+		leg->SetFillColor(0);
+		leg->SetBorderSize(0);
+		leg->SetTextSize(0.03);
+		leg->SetTextFont(42);
+		leg->Draw();
+	}
+
+	/*
+	vector<TF1*> functionLogV (graphsAllLog.size(), new TF1("LogEfficiencyVsMu", LogEfficiencyVsMu, 0.0, 0.0, 3));
+	// Fit all graphs in graphsAllLog to myfunction.
+	for (unsigned int i=0; i < graphsAllLog.size(); i++) {
+		Double_t par[] = {1.0, 1.0, 1.0};
+		functionLogV[i]->SetParameters(par);
+		functionLogV[i]->SetLineColor(colors[i]);
+		functionLogV[i]->SetParNames("p0", "p1", "p2");
+		//*-*graphsAllLog[i]->Fit(functionLogV[i], "", "", 0.01, 0.045);
+	}
+
+	// Read laser data file.
+	// ratiosMap[ieta] contains ratios for ieta at luminosity values contained in lumis.
+	vector<double> lumis;
+	std::map<int, vector<double> > ratiosMapData;
+	readLaserDataFile("../HELaserData.txt", lumis, ratiosMapData);
+
+	// Read dose and fluence map data files.
+	std::map<int, double> doseMapLayer1;
+	std::map<int, double> fluenceMapLayer1;
+	readDoseFile("../doseLayer1Mars.txt", doseMapLayer1, fluenceMapLayer1); //*-*
+
+	// Variables to read and write from Trees.
+	Int_t ieta, lumiIndex;
+	Double_t lumi, ratio;
+	ieta = 0;
+	lumiIndex = 0;
+	lumi = 0.;
+	ratio = 0.;
+
+	// Prepare to read dataRatios Tree.
+	TFile* dataFile = new TFile("dataRatios.root");
+	if (!dataFile->IsOpen()) {cout << "dataRatios.root not found"; return;}
+	TTree* dataRatios = (TTree*)dataFile->Get("dataRatios");
+	dataRatios->Show(10);
+	dataRatios->SetBranchAddress("ieta", &ieta);
+	dataRatios->SetBranchAddress("lumiIndex", &lumiIndex);
+	dataRatios->SetBranchAddress("lumi", &lumi);
+	dataRatios->SetBranchAddress("ratio", &ratio);
+	
+	// Prepare mcRatios Tree to be written. mcRatios shares branch addresses with dataRatios.
+	TString mcFileName(runName);
+	mcFileName.Prepend("mcRatios-").Append("-").Append(treeLabel).Append(".root");
+	TFile* file = new TFile(mcFileName.Data(), "recreate");
+	if (!file->IsOpen()) {cout << "mcRatios.root not found"; return;}
+	TTree* mcRatios = new TTree("mcRatios", "ratios from Geant4");
+	mcRatios->Branch("ieta", &ieta, "ieta/I");
+	mcRatios->Branch("lumiIndex", &lumiIndex, "lumiIndex/I");
+	mcRatios->Branch("lumi", &lumi, "lumi/D");
+	mcRatios->Branch("ratio", &ratio, "ratio/D");
+
+	for (unsigned int i=0; i < graphsAll.size(); i++) {
+		// Define parameters for DoseToMu and calculate undamaged efficiency.
+		//double par[2] = {0.02, 0.002};
+		double doseRateBase = 2.67e-3;
+		double A = 0.5;
+		double par[2] = {0.023, 0.001};
+		double par2[4] = {0.023, 0.001, doseRateBase, A};
+		double muTileUndamaged = 0.023;
+
+		for (unsigned int j=0; j < lumis.size(); j++) {
+			dataRatios->GetEntryWithIndex(i+22, j); // Get entry with arbitrary ieta and lumiIndex == j.
+			//stringstream cutFormula; cutFormula << "ieta == " << i << " && lumiIndex == " << j;
+			//cout << cutFormula.str() << endl;
+			//dataRatios->Draw("ieta:lumi:ratio:lumiIndex", cutFormula.str().c_str(), "goff");
+			//ieta = (dataRatios->GetVal(1))[0];
+
+			//cout << "ieta: " << ieta << endl; 
+			//cout << "lumiIndex: " << lumiIndex << endl; 
+			//cout << "lumi: " << lumi << endl; 
+			//cout << "ratio: " << ratio << endl; 
+
+			double dose = doseFactor * (doseMapLayer1[ieta] / 100) * lumi; // Dose[kGy] per fb-1.
+			double doseRate = doseMapLayer1[ieta] * 3.6e-5; // Dose rate [kGy/hr]
+			double xx[2] = {dose, doseRate};
+			double muTile = DoseToMu(&dose, par);
+			//double muTile = CalculateMu(xx, par2);
+			//double efficiency = functionV[i]->Eval(muTile);
+			double efficiency = graphsAll[i]->Eval(muTile); //*-*
+			if(j==0) {
+				muTileUndamaged = muTile;
+			}
+			//double efficiencyUndamaged = functionV[i]->Eval(muTileUndamaged);
+			double efficiencyUndamaged = graphsAll[i]->Eval(muTileUndamaged); //*-*
+			ratio = efficiency / efficiencyUndamaged;
+			double ratioFromData = (ratiosMapData[ieta])[j];
+
+//			if(j == lumis.size()-1) {
+//				cout << "ieta: " << i+22 << endl;
+//				cout << "dose: " << dose << endl; 
+//				cout << "muTile: " << muTile << endl; 
+//				cout << "efficiency: " << efficiency << endl; 
+//				cout << "efficiencyUndamaged: " << efficiencyUndamaged << endl; 
+//				cout << "ratio: " << ratio << endl; 
+//				cout << "ratioFromData: " << ratioFromData << endl; 
+//				cout << endl;
+//			}
+			mcRatios->Fill();
+		}
+	}
+
+	int nEntries = dataRatios->GetEntries();
+	for(int i=0; i < nEntries; i++) {
+//		dataRatios->GetEntry(i);
+//
+//		cout << "ieta: " << ieta << endl; 
+//		cout << "lumiIndex: " << lumiIndex << endl; 
+//		cout << "lumi: " << lumi << endl; 
+//		cout << "ratio: " << ratio << endl; 
+	}
+	
+	mcRatios->Write();
+*/
+}
+
