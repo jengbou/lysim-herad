@@ -216,6 +216,7 @@ G4VPhysicalVolume* LYSimDetectorConstruction::ConstructDetector()
 		G4cout << "rMin set to " << G4BestUnit(rMin, "Length") << G4endl;
 		G4cout << "rMax set to " << G4BestUnit(rMax, "Length") << G4endl;
 		G4cout << "Dy set to " << G4BestUnit(Dy, "Length") << G4endl;
+		G4cout << "Dx2 set to " << G4BestUnit(Dx2, "Length") << G4endl;
 	}
 	
 	G4VSolid* solidTile = 
