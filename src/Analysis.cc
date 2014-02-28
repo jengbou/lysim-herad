@@ -5,8 +5,6 @@
 #include "G4PhysicalConstants.hh"
 #include "LYSimDetectorConstruction.hh"
 #include "G4ios.hh"
-#include <iostream>
-#include <fstream>
 using namespace std;
 
 //ROOT Stuff
@@ -19,6 +17,9 @@ Analysis* Analysis::singleton = 0;
 Analysis::Analysis()
 {
 	fMessenger = new AnalysisMessenger(this);
+	// //Delete previous contents of output file.
+	// outputfile.open(fOutputFileName.c_str(), ofstream::out | ofstream::trunc);
+	// outputfile.close();
 }
 
 Analysis::~Analysis()
@@ -89,19 +90,18 @@ void Analysis::EndOfRun(const G4Run* aRun)
 	//~ PhotonHitsHist->Write();
 	//~ rootfile->Close();
 	//~ 
-	std::ofstream outputfile;
 	outputfile.open(fOutputFileName.c_str(), ofstream::out | ofstream::app);
 	G4cout	<< "Efficiency in this run is " << (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	if (outputfile.is_open())
 	{
-		outputfile << "#Mu [cm^-1] \t Efficiency" << G4endl;
-		outputfile << inducedMuTile << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
+		outputfile << "#Mu_tile [cm^-1]\tMu_fiber [cm^-1]\tEfficiency" << G4endl;
+		outputfile << inducedMuTile << "\t" << inducedMuFiber << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	}
 	else
 	{
 		G4cout << "Output file not open" << G4endl;
-		G4cout << "#Mu [cm^-1] \t Efficiency" << G4endl;
-		G4cout << inducedMuTile << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
+		G4cout << "#Mu_tile [cm^-1]\tMu_fiber [cm^-1]\tEfficiency" << G4endl;
+		G4cout << inducedMuTile << "\t" << inducedMuFiber << "\t"<< (G4double)HitCount/(G4double)PhotonCount << G4endl;
 	}
 	outputfile.close();
 }

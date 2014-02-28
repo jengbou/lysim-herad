@@ -3,6 +3,8 @@
 
 #include "G4Event.hh"
 #include "G4Run.hh"
+#include <iostream>
+#include <fstream>
 //ROOT
 //#include "TH1D.h"
 
@@ -69,6 +71,8 @@ private:
 	AnalysisMessenger* fMessenger;
 	//Pointer to DetectorConstruction class for access to detector properties
     LYSimDetectorConstruction* DetectorConstruction;   
+	//Output file
+	std::ofstream outputfile;
     //Output file name
     std::string fOutputFileName;
     //ROOT file name
