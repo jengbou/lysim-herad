@@ -183,41 +183,44 @@ G4VPhysicalVolume* LYSimDetectorConstruction::ConstructDetector()
 	//Generic trapezoid cylinder tile solid
 	G4ThreeVector tileCenter(0, 0, 0);
 	
-	{
-		// From CMSSW/Geometry/HcalTowerAlgo/src/HcalFlexiHardcodeGeometryLoader.cc.
-
-		// Eta bounds for ieta 16 to 29.
-		float etaBounds[] = {0.087*15, 0.087*16, 0.087*17, 0.087*18, 0.087*19,
-		1.74, 1.83, 1.93, 2.043, 2.172,
-		2.322, 2.500, 2.650, 2.868, 3.000};
-
-		// Z-position for layers -1 to 17.
-		float layerDepths[19] = {400.458, 408.718, 416.978, 425.248, 433.508, 
-		441.768, 450.038, 458.298, 466.558, 474.828, 
-		483.088, 491.348, 499.618, 507.878, 516.138, 
-		524.398, 532.668, 540.928, 549.268};
-
-
-		float etaMin = etaBounds[ieta - 16];
-		float etaMax = etaBounds[ieta - 16 + 1];
-
-		float centerZ = layerDepths[layerNo - (-1) + 1];
-
-		G4double thetaMin = 2 * atan(exp(-etaMax));
-		G4double thetaMax = 2 * atan(exp(-etaMin));
-		G4double rMin = centerZ * tan(thetaMin) * cm;
-		G4double rMax = centerZ * tan(thetaMax) * cm;
-		
-		Dy = rMax - rMin;
-		Dx2 = rMin * tan(angle2) - rMin * tan(angle1);
-		
-		G4cout << "thetaMin set to " << thetaMin << G4endl;
-		G4cout << "thetaMax set to " << thetaMax << G4endl;
-		G4cout << "rMin set to " << G4BestUnit(rMin, "Length") << G4endl;
-		G4cout << "rMax set to " << G4BestUnit(rMax, "Length") << G4endl;
-		G4cout << "Dy set to " << G4BestUnit(Dy, "Length") << G4endl;
-		G4cout << "Dx2 set to " << G4BestUnit(Dx2, "Length") << G4endl;
-	}
+	// Explicitly set Dy, Dx2 for branch "sub".
+/*
+ * 	{
+ * 		// From CMSSW/Geometry/HcalTowerAlgo/src/HcalFlexiHardcodeGeometryLoader.cc.
+ * 
+ * 		// Eta bounds for ieta 16 to 29.
+ * 		float etaBounds[] = {0.087*15, 0.087*16, 0.087*17, 0.087*18, 0.087*19,
+ * 		1.74, 1.83, 1.93, 2.043, 2.172,
+ * 		2.322, 2.500, 2.650, 2.868, 3.000};
+ * 
+ * 		// Z-position for layers -1 to 17.
+ * 		float layerDepths[19] = {400.458, 408.718, 416.978, 425.248, 433.508, 
+ * 		441.768, 450.038, 458.298, 466.558, 474.828, 
+ * 		483.088, 491.348, 499.618, 507.878, 516.138, 
+ * 		524.398, 532.668, 540.928, 549.268};
+ * 
+ * 
+ * 		float etaMin = etaBounds[ieta - 16];
+ * 		float etaMax = etaBounds[ieta - 16 + 1];
+ * 
+ * 		float centerZ = layerDepths[layerNo - (-1) + 1];
+ * 
+ * 		G4double thetaMin = 2 * atan(exp(-etaMax));
+ * 		G4double thetaMax = 2 * atan(exp(-etaMin));
+ * 		G4double rMin = centerZ * tan(thetaMin) * cm;
+ * 		G4double rMax = centerZ * tan(thetaMax) * cm;
+ * 		
+ * 		Dy = rMax - rMin;
+ * 		Dx2 = rMin * tan(angle2) - rMin * tan(angle1);
+ * 		
+ * 		G4cout << "thetaMin set to " << thetaMin << G4endl;
+ * 		G4cout << "thetaMax set to " << thetaMax << G4endl;
+ * 		G4cout << "rMin set to " << G4BestUnit(rMin, "Length") << G4endl;
+ * 		G4cout << "rMax set to " << G4BestUnit(rMax, "Length") << G4endl;
+ * 		G4cout << "Dy set to " << G4BestUnit(Dy, "Length") << G4endl;
+ * 		G4cout << "Dx2 set to " << G4BestUnit(Dx2, "Length") << G4endl;
+ * 	}
+ */
 	
 	G4VSolid* solidTile = 
 	ConstructTileSolid("TileTrap", 
