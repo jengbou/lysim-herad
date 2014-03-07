@@ -655,3 +655,70 @@ void plotDamageVsDose()
 	}
 	leg->Draw();
 }
+
+void fitRochCurves()
+{
+	TCanvas* c1;
+	c1 = new TCanvas("c1", "degradation vs dose", 1200, 600);
+	c1->SetLogx();
+	c1->SetLeftMargin(0.10);
+	c1->SetRightMargin(0.40);
+
+	// Graph measurements from CMS IN 2001-022.
+	// Rochester IN-2001-022: y1: 5cm x 8cm, y2: 12cm x 8cm, y3: 20cm x 20cm (x 0.4cm for all)
+	{
+		int n = 5;
+		float xArray[5] = {0.1, 1, 2, 5, 10};
+		float yArray1[5] = {1, 0.702997275, 0.591280654, 0.201634877, 0.046321526};
+		float yArray2[5] = {1, 0.670299728, 0.525885559, 0.133514986, 0.038147139};
+		float yArray3[5] = {0.85013624, 0.365122616, 0.201634877, 0.103542234, 0.008174387};
+		
+		TGraph* graphRoch1 = new TGraph(n, xArray, yArray1);
+		graphRoch1->SetTitle("");
+		graphRoch1->GetXaxis()->SetTitle("dose [Mrad]");
+		graphRoch1->GetYaxis()->SetTitle("degradation in light output");
+		graphRoch1->GetXaxis()->SetLimits(1e-3, 1e2);
+		graphRoch1->GetXaxis()->SetTitleOffset(1.0);
+		graphRoch1->GetYaxis()->SetTitleOffset(0.8);
+		graphRoch1->GetYaxis()->SetRangeUser(-0.2, 1.2);
+		graphRoch1->SetMarkerColor(kRed);
+		graphRoch1->SetMarkerSize(1.1);
+		graphRoch1->SetMarkerStyle(21);
+		graphRoch1->Draw("ap");
+
+		TGraph* graphRoch2 = new TGraph(n, xArray, yArray2);
+		graphRoch2->SetMarkerColor(kBlue);
+		graphRoch2->SetMarkerSize(1.1);
+		graphRoch2->SetMarkerStyle(21);
+		graphRoch2->Draw("p same");
+
+		TGraph* graphRoch3 = new TGraph(n, xArray, yArray3);
+		graphRoch3->SetMarkerColor(kGreen);
+		graphRoch3->SetMarkerSize(1.1);
+		graphRoch3->SetMarkerStyle(21);
+		graphRoch3->Draw("p same");
+
+		Double_t par[] = {1.0, 1.0};
+		double D0;
+
+		TF1* functionRoch1 = new TF1("functionRoch1", ExponentialDecay, 1e-5, 1e2, 2);
+		functionRoch1->SetParameters(par);
+		graphRoch1->Fit(functionRoch1, "", "", 1e-2, 1e1);
+		D0 = - 1 / functionRoch1->GetParameter(1);
+		cout << "D0: " << D0 << endl;
+
+
+		TF1* functionRoch2 = new TF1("functionRoch2", ExponentialDecay, 1e-5, 1e2, 2);
+		functionRoch2->SetParameters(par);
+		graphRoch2->Fit(functionRoch2, "", "", 1e-2, 1e1);
+		D0 = - 1 / functionRoch2->GetParameter(1);
+		cout << "D0: " << D0 << endl;
+
+
+		TF1* functionRoch3 = new TF1("functionRoch3", ExponentialDecay, 1e-5, 1e2, 2);
+		functionRoch3->SetParameters(par);
+		graphRoch3->Fit(functionRoch3, "", "", 1e-2, 1e1);
+		D0 = - 1 / functionRoch3->GetParameter(1);
+		cout << "D0: " << D0 << endl;
+	}
+}
