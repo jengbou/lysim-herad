@@ -702,8 +702,7 @@ void FitEffVsMu2(const char* runName, bool boolTileFiber)//, const char* treeLab
 			if(boolTileFiber) {graphsLayer1.push_back(analysis->graphTile);}
 			else {graphsLayer1.push_back(analysis->graphFiber);}
 			analysis = new AnalysisOutput("../" + string(runName) + "/Analysis-" + string(runName)+ "_Dx5_Dy8.txt");
-			if(boolTileFiber) {graphsLayer1.push_back(analysis->graphTile);}
-			else {graphsLayer1.push_back(analysis->graphFiber);}
+			analysis = new AnalysisOutput("../" + string(runName) + "/Analysis-" + string(runName)+ "_DY8_DX5.txt");
 		}
 		
 		// Add all graphs from graphsLayer1 to graphsAll. Add all legend names to namesAll.
