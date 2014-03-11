@@ -221,6 +221,7 @@ G4VPhysicalVolume* LYSimDetectorConstruction::ConstructDetector()
  * 		G4cout << "Dx2 set to " << G4BestUnit(Dx2, "Length") << G4endl;
  * 	}
  */
+	G4cout << "Running sub-build (requires explicit Dx2 and Dy input commands)." << G4endl;
 	G4cout << "angle1 set to " << angle1 << G4endl;
 	G4cout << "angle2 set to " << angle2 << G4endl;
 	G4cout << "Dy set to " << G4BestUnit(Dy, "Length") << G4endl;
