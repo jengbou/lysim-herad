@@ -702,14 +702,15 @@ void FitEffVsMu2(const char* runName, bool boolTileFiber)//, const char* treeLab
 			if(boolTileFiber) {graphsLayer1.push_back(analysis->graphTile);}
 			else {graphsLayer1.push_back(analysis->graphFiber);}
 			analysis = new AnalysisOutput("../" + string(runName) + "/Analysis-" + string(runName)+ "_Dx5_Dy8.txt");
-			analysis = new AnalysisOutput("../" + string(runName) + "/Analysis-" + string(runName)+ "_DY8_DX5.txt");
+			if(boolTileFiber) {graphsLayer1.push_back(analysis->graphTile);}
+			else {graphsLayer1.push_back(analysis->graphFiber);}
 		}
 		
 		// Add all graphs from graphsLayer1 to graphsAll. Add all legend names to namesAll.
 		for (unsigned int i=0; i < graphsLayer1.size(); i++) {
 			graphsAll.push_back(graphsLayer1[i]);
 			stringstream name;
-			name << "ieta " << (i+22) << "Layer1";
+			name << "file number " << i;
 			namesAll.push_back(name.str());
 		}
 	}
@@ -768,7 +769,7 @@ void FitEffVsMu2(const char* runName, bool boolTileFiber)//, const char* treeLab
 		functionV[i] = new TF1("EfficiencyVsMu", EfficiencyVsMu, 0.0, 10.0, 4);
 	}
 	// Fit all graphs in graphsAll to EfficiencyVsMu.
-	outfile << "layer\tieta\tp1\tp0" << endl;
+	outfile << "file number\tp1\tp0" << endl;
 	for (unsigned int i=0; i < graphsAll.size(); i++) {
 		Double_t par[] = {1.0, 1.0, 1.0, -1.0};
 		functionV[i]->SetParameters(par);
@@ -778,11 +779,9 @@ void FitEffVsMu2(const char* runName, bool boolTileFiber)//, const char* treeLab
 		functionV[i]->SetParNames("p0", "p1", "p2", "p3");
 		graphsAll[i]->Fit(functionV[i], "", "", 0.01, 0.19);
 
-		int ieta = (i % 8) + 22;
-		int layer = i<8 ? 1 : 7;
 		double p1 = functionV[i]->GetParameter("p1");
 		double p0 = functionV[i]->GetParameter("p0");
-		outfile << layer << "\t" << ieta << "\t";//*-*
+		outfile << i << "\t";//*-*
 		outfile << p1 << "\t" << p0 << endl;
 	}
 
