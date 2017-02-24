@@ -12,6 +12,6 @@ ANALYSIS_FILE_NAME=$3
 # header 
 #
 cd $RUN_DIR
-source /data/users/yhshin/geant4/geant4.9.6.p02-install/bin/geant4.sh
+source /data/users/jengbou/workspace/UserCode/geant4.10.03-install/bin/geant4.sh
 
 ./LYSim ${INPUT_NAME} ${ANALYSIS_FILE_NAME}

@@ -46,7 +46,7 @@ class LYSimPhysicsList : public G4VUserPhysicsList
     
   private:
     G4Cerenkov*          theCerenkovProcess;
-    LYSimScintillation*     theScintillationProcess;
+    LYSimScintillation*  theScintillationProcess;
     G4OpAbsorption*      theAbsorptionProcess;
     G4OpRayleigh*        theRayleighScatteringProcess;
     G4OpMieHG*           theMieHGScatteringProcess;

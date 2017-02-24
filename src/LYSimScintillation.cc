@@ -2,6 +2,7 @@
 
 #include <G4VParticleChange.hh>
 
+using namespace CLHEP;
 //extern std::ofstream outFile;
 
 LYSimScintillation::LYSimScintillation(const G4String &processName, G4ProcessType type)
